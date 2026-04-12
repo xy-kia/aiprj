@@ -12,6 +12,7 @@ import re
 import logging
 from typing import Dict, List, Any, Optional, Tuple, Union
 import openai
+from openai import APITimeoutError, APIConnectionError, AuthenticationError, APIError
 try:
     from ..config.settings import settings
 except ImportError:
@@ -95,11 +96,14 @@ class AIParser:
             self.logger = logging.getLogger(__name__)
 
         # 初始化OpenAI客户端
+        # 设置连接超时30秒，读取超时1800秒（30分钟），防止慢速API或网络问题
+        timeout_config = (30.0, 1800.0)  # (connect_timeout, read_timeout)
         self.client = openai.OpenAI(
             api_key=self.api_key,
             base_url=self.base_url if self.base_url != "https://api.openai.com/v1" else None,
-            timeout=1200.0  # 增加到1200秒（20分钟）防止超时
+            timeout=timeout_config
         )
+        self.logger.info(f"AI解析器初始化完成，使用模型: {self.model}，base_url: {self.base_url}，超时设置: {timeout_config} 秒")
 
         # 提示词模板
         self.prompt_templates = {
@@ -301,7 +305,7 @@ class AIParser:
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 response_format={"type": "json_object"},
-                timeout=1200.0  # 增加到1200秒（20分钟）防止超时
+                timeout=1800.0  # 增加到1800秒（30分钟）防止超时
             )
 
             # 解析响应
@@ -341,6 +345,18 @@ class AIParser:
             self.logger.error(f"AI响应内容: {content[:500]}...")
             return []
 
+        except APITimeoutError as e:
+            self.logger.error(f"AI解析超时: {e}，请检查网络连接或API服务状态，超时设置为1800秒")
+            return []
+        except APIConnectionError as e:
+            self.logger.error(f"AI解析连接错误: {e}，请检查网络连接或代理设置")
+            return []
+        except AuthenticationError as e:
+            self.logger.error(f"AI API认证失败: {e}，请检查API密钥是否正确")
+            return []
+        except APIError as e:
+            self.logger.error(f"AI API错误: {e}，可能是服务端问题")
+            return []
         except Exception as e:
             self.logger.error(f"AI解析失败: {e}")
             return []
@@ -377,7 +393,7 @@ class AIParser:
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 response_format={"type": "json_object"},
-                timeout=1200.0  # 增加到1200秒（20分钟）防止超时
+                timeout=1800.0  # 增加到1800秒（30分钟）防止超时
             )
 
             content = response.choices[0].message.content
@@ -390,6 +406,18 @@ class AIParser:
                 self.logger.warning(f"AI响应不是字典类型: {type(data)}")
                 return {}
 
+        except APITimeoutError as e:
+            self.logger.error(f"AI解析详情页超时: {e}，请检查网络连接或API服务状态，超时设置为1800秒")
+            return {}
+        except APIConnectionError as e:
+            self.logger.error(f"AI解析详情页连接错误: {e}，请检查网络连接或代理设置")
+            return {}
+        except AuthenticationError as e:
+            self.logger.error(f"AI API认证失败: {e}，请检查API密钥是否正确")
+            return {}
+        except APIError as e:
+            self.logger.error(f"AI API错误: {e}，可能是服务端问题")
+            return {}
         except Exception as e:
             self.logger.error(f"AI解析详情页失败: {e}")
             return {}

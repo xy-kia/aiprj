@@ -24,6 +24,9 @@ class BOSSCrawler(PlaywrightCrawler):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # 记录传入的参数（用于调试）
+        self.logger.info(f"BOSS爬虫初始化参数: { {k: v for k, v in kwargs.items() if k != 'api_key' and 'key' not in k.lower()} }")
+
         # BOSS直聘特定配置
         self.search_url = f"{self.base_url}/web/geek/job"
         self.headers = {
@@ -53,9 +56,12 @@ class BOSSCrawler(PlaywrightCrawler):
             try:
                 # 如果有用户配置，传递给AI解析器
                 if self.user_config:
+                    enabled = getattr(self.user_config, 'enabled', False)
+                    self.logger.info(f"用户配置存在，启用状态: {enabled}")
                     self.ai_parser = AIParser(user_config=self.user_config)
                     self.logger.info("AI解析器初始化成功（使用用户配置）")
                 else:
+                    self.logger.info("未提供用户配置，使用系统默认配置")
                     self.ai_parser = AIParser()
                     self.logger.info("AI解析器初始化成功（使用系统配置）")
             except Exception as e:

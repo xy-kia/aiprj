@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import openai
+from openai import APITimeoutError, APIConnectionError, AuthenticationError, APIError
 from backend.config.settings import settings
 
 
@@ -66,12 +67,14 @@ class QuestionGenerator:
         # 日志
         self.logger = logging.getLogger(__name__)
 
-        # 初始化OpenAI客户端 - 增加超时时间到180秒
+        # 初始化OpenAI客户端 - 增加超时时间到1800秒（30分钟），防止慢速API或网络问题
+        timeout_config = (30.0, 1800.0)  # (connect_timeout, read_timeout)
         self.client = openai.OpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
-            timeout=600.0  # 增加超时时间到600秒（10分钟），防止请求超时
+            timeout=timeout_config
         )
+        self.logger.info(f"问题生成器初始化完成，使用模型: {self.model}，base_url: {self.base_url}，超时设置: {timeout_config} 秒")
 
         # 初始化Redis客户端
         self.redis_client = redis_client or self._init_redis_client()
@@ -410,7 +413,7 @@ class QuestionGenerator:
                 temperature=0.7,
                 max_tokens=4000,  # 增加token数量，适应生成多个问题
                 response_format={"type": "json_object"},
-                timeout=300.0  # 增加到300秒防止超时
+                timeout=1800.0  # 增加到1800秒（30分钟）防止超时
             )
 
             # 解析响应
@@ -458,6 +461,19 @@ class QuestionGenerator:
 
             return filtered_questions
 
+        except APITimeoutError as e:
+            self.logger.error(f"生成问题超时: {e}，请检查网络连接或API服务状态，超时设置为1800秒")
+            # 返回备用问题
+            return self._generate_fallback_questions(job_info)
+        except APIConnectionError as e:
+            self.logger.error(f"生成问题连接错误: {e}，请检查网络连接或代理设置")
+            return self._generate_fallback_questions(job_info)
+        except AuthenticationError as e:
+            self.logger.error(f"AI API认证失败: {e}，请检查API密钥是否正确")
+            return self._generate_fallback_questions(job_info)
+        except APIError as e:
+            self.logger.error(f"AI API错误: {e}，可能是服务端问题")
+            return self._generate_fallback_questions(job_info)
         except Exception as e:
             self.logger.error(f"生成问题失败: {e}")
             # 返回备用问题
@@ -805,7 +821,7 @@ class QuestionGenerator:
                 temperature=0.3,
                 max_tokens=3000,  # 增加token数量用于评估多个问题
                 response_format={"type": "json_object"},
-                timeout=300.0  # 增加到300秒防止超时
+                timeout=1800.0  # 增加到1800秒（30分钟）防止超时
             )
 
             # 解析响应
@@ -815,6 +831,47 @@ class QuestionGenerator:
             self.logger.info(f"问题评估完成，整体评分: {evaluation_result.get('overall_score', 'N/A')}")
             return evaluation_result
 
+        except APITimeoutError as e:
+            self.logger.error(f"问题评估超时: {e}，请检查网络连接或API服务状态，超时设置为1800秒")
+            # 返回默认评估结果，推荐所有问题
+            return {
+                "overall_score": 7.0,
+                "question_scores": [7.0] * len(questions),
+                "strengths": ["问题生成正常"],
+                "weaknesses": ["评估服务暂时不可用"],
+                "improvement_suggestions": ["请确保问题与岗位要求相关"],
+                "recommended_questions": list(range(len(questions)))
+            }
+        except APIConnectionError as e:
+            self.logger.error(f"问题评估连接错误: {e}，请检查网络连接或代理设置")
+            return {
+                "overall_score": 7.0,
+                "question_scores": [7.0] * len(questions),
+                "strengths": ["问题生成正常"],
+                "weaknesses": ["评估服务暂时不可用"],
+                "improvement_suggestions": ["请确保问题与岗位要求相关"],
+                "recommended_questions": list(range(len(questions)))
+            }
+        except AuthenticationError as e:
+            self.logger.error(f"AI API认证失败: {e}，请检查API密钥是否正确")
+            return {
+                "overall_score": 7.0,
+                "question_scores": [7.0] * len(questions),
+                "strengths": ["问题生成正常"],
+                "weaknesses": ["评估服务暂时不可用"],
+                "improvement_suggestions": ["请确保问题与岗位要求相关"],
+                "recommended_questions": list(range(len(questions)))
+            }
+        except APIError as e:
+            self.logger.error(f"AI API错误: {e}，可能是服务端问题")
+            return {
+                "overall_score": 7.0,
+                "question_scores": [7.0] * len(questions),
+                "strengths": ["问题生成正常"],
+                "weaknesses": ["评估服务暂时不可用"],
+                "improvement_suggestions": ["请确保问题与岗位要求相关"],
+                "recommended_questions": list(range(len(questions)))
+            }
         except Exception as e:
             self.logger.error(f"LLM问题评估失败: {e}")
             # 返回默认评估结果，推荐所有问题

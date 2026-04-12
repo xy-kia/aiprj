@@ -95,13 +95,24 @@ async def search_jobs(
         if current_user and hasattr(current_user, 'username'):
             user_config = get_user_config_by_username(db, current_user.username)
             if user_config:
-                print(f"[DEBUG] 找到用户AI配置，启用状态: {user_config.enabled}", file=sys.stderr)
+                print(f"[DEBUG] 找到认证用户AI配置，用户名: {current_user.username}, 启用状态: {user_config.enabled}", file=sys.stderr)
             else:
-                print(f"[DEBUG] 未找到用户AI配置，使用系统默认配置", file=sys.stderr)
+                print(f"[DEBUG] 未找到认证用户AI配置，使用系统默认配置", file=sys.stderr)
+        else:
+            # 尝试获取匿名用户配置
+            print(f"[DEBUG] 当前用户未认证，尝试获取匿名用户配置", file=sys.stderr)
+            anonymous_user = db.query(User).filter(User.username == "anonymous").first()
+            if anonymous_user:
+                user_config = get_user_config_by_username(db, "anonymous")
+                if user_config:
+                    print(f"[DEBUG] 找到匿名用户AI配置，启用状态: {user_config.enabled}", file=sys.stderr)
+                else:
+                    print(f"[DEBUG] 未找到匿名用户AI配置", file=sys.stderr)
+            else:
+                print(f"[DEBUG] 匿名用户不存在", file=sys.stderr)
 
         # 创建爬虫实例（这里只使用BOSS直聘作为示例）
         # 实际项目中应初始化所有平台的爬虫
-        import sys
         crawlers = [
             BOSSCrawler(
                 use_proxy=False,
@@ -143,7 +154,6 @@ async def search_jobs(
             all_filters["education"] = request.keywords.educations[0]
 
         # 执行搜索
-        import sys
         print(f"[DEBUG] 搜索开始: keyword={search_keyword}, city={city}", file=sys.stderr)
         jobs = await scheduler.search(
             keyword=search_keyword,
@@ -253,6 +263,9 @@ async def search_jobs(
         )
 
     except Exception as e:
+        import traceback
+        print(f"[ERROR] 岗位搜索异常: {str(e)}", file=sys.stderr)
+        print(f"[ERROR] 异常堆栈:\n{traceback.format_exc()}", file=sys.stderr)
         raise HTTPException(
             status_code=500,
             detail=f"岗位搜索失败: {str(e)}"

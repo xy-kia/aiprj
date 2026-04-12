@@ -22,7 +22,7 @@ class SearchScheduler:
         self,
         crawlers: List[BaseCrawler],
         max_workers: int = 4,
-        timeout: int = 1200,  # 增加到1200秒（20分钟），防止超时
+        timeout: int = 1800,  # 增加到1800秒（30分钟），防止超时，特别是AI解析可能较慢
         max_retries: int = 2
     ):
         """
@@ -69,7 +69,8 @@ class SearchScheduler:
 
         # 创建任务列表
         tasks = []
-        for crawler in self.crawlers:
+        for i, crawler in enumerate(self.crawlers):
+            self.logger.info(f"创建爬虫任务 {i}: {crawler.platform} (类型: {type(crawler).__name__})")
             task = self._run_crawler_with_retry(
                 crawler, keyword, city, page_limit
             )
@@ -153,7 +154,9 @@ class SearchScheduler:
                     raise
 
             except Exception as e:
+                import traceback
                 self.logger.error(f"爬虫 {crawler.platform} 出错: {e} (尝试 {attempt + 1})")
+                self.logger.error(f"异常堆栈: {traceback.format_exc()}")
                 if attempt == self.max_retries:
                     raise
 

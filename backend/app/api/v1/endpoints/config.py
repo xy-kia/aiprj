@@ -136,7 +136,8 @@ async def test_openai_connection(api_key: str, base_url: str) -> tuple[bool, str
     try:
         client = openai.OpenAI(
             api_key=api_key,
-            base_url=base_url if base_url != "https://api.openai.com/v1" else None
+            base_url=base_url if base_url != "https://api.openai.com/v1" else None,
+            timeout=(30.0, 120.0)  # 连接超时30秒，读取超时120秒
         )
 
         # 测试连接：获取模型列表
