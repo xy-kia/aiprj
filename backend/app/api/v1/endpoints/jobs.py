@@ -3,7 +3,7 @@
 实现POST /api/v1/search-jobs接口
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 
@@ -115,9 +115,6 @@ async def search_jobs(request: SearchJobsRequest):
         # 转换为字典列表，匹配前端接口
         jobs_data = []
         for i, job in enumerate(jobs):
-            # 生成一个唯一的ID（如果job.id不存在）
-            job_id = job.id if job.id else f"job_{i}_{hash(job.title + job.company) % 10000}"
-
             # 构建薪资字符串
             salary_str = ""
             if job.salary_min and job.salary_max:
@@ -163,18 +160,42 @@ async def search_jobs(request: SearchJobsRequest):
                 top_k=min(20, len(jobs_data))
             )
 
-        # 搜索统计
-        search_stats = {
-            "total_jobs": len(jobs_data),
-            "unique_sources": len(set(job.source for job in jobs if job.source)),
-            "successful_crawlers": len(crawlers)  # 简化：假设所有爬虫都成功
-        }
+        # 分页处理
+        page = request.page or 1
+        page_size = request.page_size or 10
+        total = len(jobs_data)
+
+        # 计算分页范围
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_jobs = jobs_data[start_idx:end_idx]
+
+        # 将字典转换为JobItemResponse对象
+        job_responses = []
+        for job_dict in paginated_jobs:
+            # 确保数据类型正确
+            job_response = JobItemResponse(
+                id=job_dict["id"],
+                source=job_dict["source"],
+                title=job_dict["title"],
+                company=job_dict["company"],
+                location=job_dict["location"],
+                salary=job_dict["salary"],
+                experience=job_dict["experience"],
+                education=job_dict["education"],
+                job_type=job_dict["job_type"],
+                description=job_dict["description"],
+                skills=job_dict["skills"],
+                url=job_dict["url"]
+            )
+            job_responses.append(job_response)
 
         return SearchJobsResponse(
-            jobs=jobs_data,
-            total_count=len(jobs_data),
-            match_results=match_results,
-            search_stats=search_stats
+            jobs=job_responses,
+            total=total,
+            page=page,
+            page_size=page_size,
+            match_results=match_results
         )
 
     except Exception as e:
