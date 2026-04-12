@@ -6,10 +6,13 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
+import asyncio
+import sys
 
 from backend.app.core.search_scheduler import create_search_scheduler
 from backend.app.core.match_calculator import create_match_calculator
 from backend.crawlers.boss_crawler import BOSSCrawler
+from backend.crawlers.test_crawler import TestCrawler
 # 注意：其他爬虫需要实际实现
 
 router = APIRouter()
@@ -67,10 +70,13 @@ async def search_jobs(request: SearchJobsRequest):
     try:
         # 创建爬虫实例（这里只使用BOSS直聘作为示例）
         # 实际项目中应初始化所有平台的爬虫
+        import sys
         crawlers = [
-            BOSSCrawler(use_proxy=False, headless=True)
+            BOSSCrawler(use_proxy=False, headless=True),
+            TestCrawler()  # 测试爬虫作为备用，提供模拟数据
             # 可添加其他爬虫：ZhaopinCrawler(), QianchengCrawler(), LiepinCrawler()
         ]
+        print(f"[DEBUG] 创建了 {len(crawlers)} 个爬虫: {[c.platform for c in crawlers]}", file=sys.stderr)
 
         # 创建搜索调度器
         scheduler = create_search_scheduler(crawlers)
@@ -102,15 +108,28 @@ async def search_jobs(request: SearchJobsRequest):
             all_filters["education"] = request.keywords.educations[0]
 
         # 执行搜索
+        import sys
+        print(f"[DEBUG] 搜索开始: keyword={search_keyword}, city={city}", file=sys.stderr)
         jobs = await scheduler.search(
             keyword=search_keyword,
             city=city,
             page_limit=3  # 每平台最大页数
         )
+        print(f"[DEBUG] 搜索完成，获取到 {len(jobs)} 个岗位", file=sys.stderr)
 
         # 过滤岗位（如果提供了过滤条件）
         if all_filters:
             jobs = scheduler.filter_jobs(jobs, all_filters)
+
+        # 如果没有任何岗位，使用TestCrawler作为后备
+        if not jobs:
+            print(f"[DEBUG] 没有获取到岗位，使用TestCrawler后备方案", file=sys.stderr)
+            test_crawler = TestCrawler()
+            # TestCrawler的search_jobs是同步生成器，需要转换为列表
+            test_jobs = list(test_crawler.search_jobs(search_keyword, city, page=1))
+            print(f"[DEBUG] TestCrawler获取到 {len(test_jobs)} 个岗位", file=sys.stderr)
+            if test_jobs:
+                jobs = test_jobs
 
         # 转换为字典列表，匹配前端接口
         jobs_data = []

@@ -363,24 +363,143 @@ class BOSSCrawler(PlaywrightCrawler):
     def _parse_job_from_html(self, element) -> Optional[Dict[str, Any]]:
         """从HTML元素解析岗位"""
         try:
-            # 简单的HTML解析（需要根据实际页面结构调整）
-            title_elem = element.find('span', class_=re.compile(r'job-name'))
-            company_elem = element.find('div', class_=re.compile(r'company-name'))
-            salary_elem = element.find('span', class_=re.compile(r'salary'))
+            # 尝试多种选择器
+            selectors = {
+                "title": [
+                    ('span', r'job-name|title|position-name'),
+                    ('h3', r'job-title|position-title'),
+                    ('div', r'job-name|title'),
+                    ('a', r'job-name'),
+                ],
+                "company": [
+                    ('div', r'company-name|company|employer'),
+                    ('span', r'company|brand'),
+                    ('a', r'company'),
+                ],
+                "salary": [
+                    ('span', r'salary|money|pay'),
+                    ('div', r'salary|compensation'),
+                ],
+                "location": [
+                    ('span', r'location|city|area'),
+                    ('div', r'location|work-location'),
+                ],
+                "experience": [
+                    ('span', r'experience|exp|work-exp'),
+                    ('div', r'experience|requirement'),
+                ],
+                "education": [
+                    ('span', r'education|degree|academic'),
+                    ('div', r'education|requirement'),
+                ],
+            }
 
-            if not title_elem:
+            def find_element(elem, tag, class_pattern):
+                # 按类名查找
+                result = elem.find(tag, class_=re.compile(class_pattern))
+                if result:
+                    return result
+                # 按属性查找
+                for child in elem.find_all(tag):
+                    if 'class' in child.attrs:
+                        classes = ' '.join(child['class'])
+                        if re.search(class_pattern, classes):
+                            return child
                 return None
 
+            # 提取字段
+            title_elem = None
+            for tag, pattern in selectors["title"]:
+                title_elem = find_element(element, tag, pattern)
+                if title_elem:
+                    break
+
+            if not title_elem:
+                # 如果没有找到标题，尝试查找任何包含文本的h3或span
+                for tag in ['h3', 'span', 'div', 'a']:
+                    title_elem = element.find(tag)
+                    if title_elem and title_elem.text.strip():
+                        break
+
+            if not title_elem or not title_elem.text.strip():
+                return None
+
+            title = title_elem.text.strip()
+
+            # 提取其他字段
+            company_elem = None
+            for tag, pattern in selectors["company"]:
+                company_elem = find_element(element, tag, pattern)
+                if company_elem:
+                    break
+            company = company_elem.text.strip() if company_elem else ""
+
+            salary_elem = None
+            for tag, pattern in selectors["salary"]:
+                salary_elem = find_element(element, tag, pattern)
+                if salary_elem:
+                    break
+            salary_text = salary_elem.text.strip() if salary_elem else ""
+
+            location_elem = None
+            for tag, pattern in selectors["location"]:
+                location_elem = find_element(element, tag, pattern)
+                if location_elem:
+                    break
+            location = location_elem.text.strip() if location_elem else ""
+
+            experience_elem = None
+            for tag, pattern in selectors["experience"]:
+                experience_elem = find_element(element, tag, pattern)
+                if experience_elem:
+                    break
+            experience = experience_elem.text.strip() if experience_elem else ""
+
+            education_elem = None
+            for tag, pattern in selectors["education"]:
+                education_elem = find_element(element, tag, pattern)
+                if education_elem:
+                    break
+            education = education_elem.text.strip() if education_elem else ""
+
+            # 提取技能标签
+            skills = []
+            skill_elems = element.find_all('span', class_=re.compile(r'skill|tag|label'))
+            for elem in skill_elems:
+                text = elem.text.strip()
+                if text and len(text) < 20:  # 避免过长的文本
+                    skills.append(text)
+
+            # 提取URL
+            url = ""
+            link_elem = element.find('a', href=True)
+            if link_elem:
+                href = link_elem['href']
+                if href.startswith('http'):
+                    url = href
+                else:
+                    url = self.base_url + href
+
+            # 提取ID
+            job_id = element.get('data-jobid') or element.get('data-id') or ""
+
             job = {
-                "id": element.get('data-jobid') or "",
-                "title": title_elem.text.strip() if title_elem else "",
-                "company": company_elem.text.strip() if company_elem else "",
-                "salary_text": salary_elem.text.strip() if salary_elem else "",
-                "url": self.base_url + element.find('a').get('href', '') if element.find('a') else ""
+                "id": job_id,
+                "title": title,
+                "company": company,
+                "location": location,
+                "salary_text": salary_text,
+                "experience": experience,
+                "education": education,
+                "skills": skills,
+                "url": url
             }
+
+            self.logger.debug(f"HTML解析岗位: {title} - {company}")
+
             return job
         except Exception as e:
-            self.logger.warning(f"解析HTML岗位数据失败: {e}")
+            self.logger.warning(f"解析HTML岗位数据失败: {e}", exc_info=True)
             return None
 
     def _create_job_item(self, job_data: Dict[str, Any]) -> JobItem:
