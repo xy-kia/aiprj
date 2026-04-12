@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 
 from backend.app.db.database import get_db
-from backend.app.db.models import UserConfig, User
+from backend.app.db.models import UserConfig, User as UserModel
 from backend.config.settings import settings
+from .auth import get_current_active_user, get_user
 import openai
 import anthropic
 import logging
@@ -75,6 +76,27 @@ class TestConnectionResponse(BaseModel):
 
 
 # 工具函数
+def get_or_create_anonymous_user(db: Session) -> UserModel:
+    """获取或创建匿名用户（用于未认证访问）"""
+    anonymous_user = db.query(UserModel).filter(UserModel.username == "anonymous").first()
+    if not anonymous_user:
+        # 导入密码哈希函数
+        from .auth import get_password_hash
+        anonymous_user = UserModel(
+            username="anonymous",
+            email="anonymous@localhost",
+            full_name="Anonymous User",
+            hashed_password=get_password_hash("anonymous123"),
+            is_active=True,
+            is_admin=False
+        )
+        db.add(anonymous_user)
+        db.commit()
+        db.refresh(anonymous_user)
+        logger.info(f"创建匿名用户: {anonymous_user.username}")
+    return anonymous_user
+
+
 def get_user_config(db: Session, user_id: int) -> Optional[UserConfig]:
     """获取用户配置"""
     return db.query(UserConfig).filter(UserConfig.user_id == user_id).first()
@@ -175,19 +197,27 @@ async def test_anthropic_connection(api_key: str) -> tuple[bool, str, Optional[L
 # API端点
 @router.get("/ai-config", response_model=AIConfigResponse)
 async def get_ai_config(
-    user_id: int = 1,  # TODO: 从token中获取真实用户ID
     db: Session = Depends(get_db)
 ):
     """
-    获取用户的AI配置
+    获取AI配置（匿名用户）
     """
-    config = get_user_config(db, user_id)
+    # 获取或创建匿名用户
+    anonymous_user = get_or_create_anonymous_user(db)
+
+    if not anonymous_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="匿名用户ID无效"
+        )
+
+    config = get_user_config(db, anonymous_user.id)
 
     if not config:
         # 返回默认配置
         return AIConfigResponse(
             id=0,
-            user_id=user_id,
+            user_id=anonymous_user.id,
             provider="openai",
             base_url=settings.OPENAI_BASE_URL,
             default_model=settings.OPENAI_MODEL,
@@ -213,12 +243,20 @@ async def get_ai_config(
 @router.post("/ai-config", response_model=AIConfigResponse)
 async def update_ai_config(
     config: AIProviderConfig,
-    user_id: int = 1,  # TODO: 从token中获取真实用户ID
     db: Session = Depends(get_db)
 ):
     """
-    更新用户的AI配置
+    更新AI配置（匿名用户）
     """
+    # 获取或创建匿名用户
+    anonymous_user = get_or_create_anonymous_user(db)
+
+    if not anonymous_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="匿名用户ID无效"
+        )
+
     # 加密API密钥
     encrypted_key = encrypt_api_key(config.api_key)
 
@@ -232,7 +270,7 @@ async def update_ai_config(
         "max_tokens": config.max_tokens
     }
 
-    user_config = create_or_update_user_config(db, user_id, config_data)
+    user_config = create_or_update_user_config(db, anonymous_user.id, config_data)
 
     return AIConfigResponse(
         id=user_config.id,
@@ -302,13 +340,21 @@ async def test_ai_connection(
 
 @router.get("/ai-config/models", response_model=ModelListResponse)
 async def get_available_models(
-    user_id: int = 1,  # TODO: 从token中获取真实用户ID
     db: Session = Depends(get_db)
 ):
     """
-    获取用户配置下可用的模型列表
+    获取可用模型列表（匿名用户）
     """
-    config = get_user_config(db, user_id)
+    # 获取或创建匿名用户
+    anonymous_user = get_or_create_anonymous_user(db)
+
+    if not anonymous_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="匿名用户ID无效"
+        )
+
+    config = get_user_config(db, anonymous_user.id)
 
     # 如果没有配置或未启用，使用系统默认配置
     if not config or not config.enabled:

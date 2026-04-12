@@ -1,18 +1,23 @@
 """
 岗位搜索API端点
 实现POST /api/v1/search-jobs接口
+支持使用用户配置的AI API进行搜索和解析
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import asyncio
 import sys
+from sqlalchemy.orm import Session
 
 from backend.app.core.search_scheduler import create_search_scheduler
 from backend.app.core.match_calculator import create_match_calculator
 from backend.crawlers.boss_crawler import BOSSCrawler
 from backend.crawlers.test_crawler import TestCrawler
+from backend.app.api.v1.endpoints.auth import get_current_user_optional
+from backend.app.db.database import get_db
+from backend.app.db.models import UserConfig, User
 # 注意：其他爬虫需要实际实现
 
 router = APIRouter()
@@ -55,10 +60,27 @@ class SearchJobsResponse(BaseModel):
     match_results: Optional[List[Dict[str, Any]]] = None
 
 
+def get_user_config_by_username(db: Session, username: str) -> Optional[UserConfig]:
+    """通过用户名获取用户配置"""
+    # 首先通过用户名查找用户ID
+    from backend.app.db.models import User
+    user = db.query(User).filter(User.username == username).first()
+    if user:
+        # 然后查找用户配置
+        return db.query(UserConfig).filter(UserConfig.user_id == user.id).first()
+    return None
+
+
 @router.post("/search-jobs", response_model=SearchJobsResponse)
-async def search_jobs(request: SearchJobsRequest):
+async def search_jobs(
+    request: SearchJobsRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """
     搜索岗位并计算匹配度
+    使用当前用户的AI配置进行搜索和解析（如果已配置）
+    允许匿名访问，但如果用户已登录且配置了AI API，则使用用户配置
 
     - **keywords**: 结构化关键词（技能、岗位类型、地点等）
     - **page**: 页码
@@ -68,12 +90,25 @@ async def search_jobs(request: SearchJobsRequest):
     返回搜索到的岗位列表和匹配度结果
     """
     try:
+        # 获取用户AI配置
+        user_config = None
+        if current_user and hasattr(current_user, 'username'):
+            user_config = get_user_config_by_username(db, current_user.username)
+            if user_config:
+                print(f"[DEBUG] 找到用户AI配置，启用状态: {user_config.enabled}", file=sys.stderr)
+            else:
+                print(f"[DEBUG] 未找到用户AI配置，使用系统默认配置", file=sys.stderr)
+
         # 创建爬虫实例（这里只使用BOSS直聘作为示例）
         # 实际项目中应初始化所有平台的爬虫
         import sys
         crawlers = [
-            BOSSCrawler(use_proxy=False, headless=True),
-            TestCrawler()  # 测试爬虫作为备用，提供模拟数据
+            BOSSCrawler(
+                use_proxy=False,
+                headless=True,
+                user_config=user_config  # 传递用户配置给爬虫
+            ),
+            TestCrawler(user_config=user_config)  # 测试爬虫也传递配置
             # 可添加其他爬虫：ZhaopinCrawler(), QianchengCrawler(), LiepinCrawler()
         ]
         print(f"[DEBUG] 创建了 {len(crawlers)} 个爬虫: {[c.platform for c in crawlers]}", file=sys.stderr)

@@ -8,6 +8,10 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 
 from backend.app.core.answer_evaluator import create_answer_evaluator, EvaluationResult
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from backend.app.db.database import get_db
+from backend.app.api.v1.endpoints.config import get_or_create_anonymous_user, get_user_config, decrypt_api_key
 
 router = APIRouter()
 
@@ -44,7 +48,7 @@ class EvaluateAnswerResponse(BaseModel):
 
 
 @router.post("/evaluate-answer", response_model=EvaluateAnswerResponse)
-async def evaluate_answer(request: EvaluateAnswerRequest):
+async def evaluate_answer(request: EvaluateAnswerRequest, db: Session = Depends(get_db)):
     """
     评估用户对面试问题的回答
 
@@ -56,8 +60,26 @@ async def evaluate_answer(request: EvaluateAnswerRequest):
     返回评估结果，包括总分、匹配等级、各维度分数和改进建议
     """
     try:
+        # 获取匿名用户配置
+        anonymous_user = get_or_create_anonymous_user(db)
+        config = get_user_config(db, anonymous_user.id)
+
+        api_key = None
+        base_url = None
+        model = None
+
+        if config and config.enabled:
+            # 解密API密钥
+            api_key = decrypt_api_key(config.api_key) if config.api_key else None
+            base_url = config.base_url
+            model = config.default_model
+
         # 创建回答评估器
-        evaluator = create_answer_evaluator()
+        evaluator = create_answer_evaluator(
+            api_key=api_key,
+            model=model,
+            base_url=base_url
+        )
 
         # 评估回答
         result = evaluator.evaluate(

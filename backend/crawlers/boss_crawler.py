@@ -8,10 +8,11 @@ BOSS直聘爬虫实现
 import re
 import json
 import asyncio
-from typing import Dict, List, Any, Optional, Generator
+from typing import Dict, List, Any, Optional, Generator, AsyncGenerator
 from urllib.parse import urlencode
 
 from .base import PlaywrightCrawler, JobItem
+from .ai_parser import AIParser
 
 
 class BOSSCrawler(PlaywrightCrawler):
@@ -43,6 +44,22 @@ class BOSSCrawler(PlaywrightCrawler):
             "武汉": "101200100",
             "南京": "101190100",
         }
+
+        # AI解析器（作为备用解析方案）
+        self.ai_parser_enabled = kwargs.get("ai_parser_enabled", True)
+        self.user_config = kwargs.get("user_config")  # 用户AI配置
+        self.ai_parser = None
+        if self.ai_parser_enabled:
+            try:
+                # 如果有用户配置，传递给AI解析器
+                if self.user_config:
+                    self.ai_parser = AIParser(user_config=self.user_config)
+                    self.logger.info("AI解析器初始化成功（使用用户配置）")
+                else:
+                    self.ai_parser = AIParser()
+                    self.logger.info("AI解析器初始化成功（使用系统配置）")
+            except Exception as e:
+                self.logger.warning(f"AI解析器初始化失败，将仅使用传统解析: {e}")
 
     def search_jobs(
         self,
@@ -89,7 +106,7 @@ class BOSSCrawler(PlaywrightCrawler):
         city: Optional[str] = None,
         page: int = 1,
         **filters
-    ) -> Generator[JobItem, None, None]:
+    ) -> AsyncGenerator[JobItem, None]:
         """
         搜索岗位（异步版本）
 
@@ -121,7 +138,7 @@ class BOSSCrawler(PlaywrightCrawler):
 
             # 提取岗位详情（简单版本，只取前几个）
             max_jobs = 10  # 每页最大岗位数
-            for i, job_data in enumerate(job_list[:max_jobs]):
+            for job_data in job_list[:max_jobs]:
                 try:
                     # 生成JobItem
                     job = self._create_job_item(job_data)
@@ -284,6 +301,39 @@ class BOSSCrawler(PlaywrightCrawler):
 
         except Exception as e:
             self.logger.error(f"解析列表页失败: {e}", exc_info=True)
+
+        # 如果传统解析方法都没有找到数据，尝试AI解析
+        if not jobs and self.ai_parser and self.ai_parser_enabled:
+            try:
+                self.logger.info("传统解析方法失败，尝试使用AI解析")
+                ai_jobs = self.ai_parser.parse_list_page(html, self.platform)
+
+                if ai_jobs:
+                    self.logger.info(f"AI解析成功，找到 {len(ai_jobs)} 个岗位")
+
+                    # 将AI解析的数据转换为标准格式
+                    for ai_job_data in ai_jobs:
+                        try:
+                            # 确保数据有必要的字段
+                            if not isinstance(ai_job_data, dict):
+                                continue
+
+                            # 如果AI解析缺少必要字段，尝试补充
+                            if "id" not in ai_job_data:
+                                ai_job_data["id"] = ""
+                            if "url" not in ai_job_data:
+                                ai_job_data["url"] = ""
+                            if "skills" not in ai_job_data:
+                                ai_job_data["skills"] = []
+
+                            jobs.append(ai_job_data)
+                        except Exception as e:
+                            self.logger.warning(f"处理AI解析数据失败: {e}")
+                            continue
+                else:
+                    self.logger.info("AI解析也未找到岗位数据")
+            except Exception as e:
+                self.logger.error(f"AI解析失败: {e}")
 
         return jobs
 
@@ -616,5 +666,20 @@ class BOSSCrawler(PlaywrightCrawler):
         desc_elem = soup.find('div', class_=re.compile(r'job-detail'))
         if desc_elem:
             job_data["description"] = desc_elem.text.strip()
+
+        # 如果传统解析方法都没有找到有效数据，尝试AI解析
+        if not job_data.get("title") and not job_data.get("company") and self.ai_parser and self.ai_parser_enabled:
+            try:
+                self.logger.info("详情页传统解析方法失败，尝试使用AI解析")
+                ai_job_data = self.ai_parser.parse_detail_page(html, self.platform)
+
+                if ai_job_data:
+                    self.logger.info("AI解析详情页成功")
+                    # 合并AI解析的数据（优先使用AI数据）
+                    for key, value in ai_job_data.items():
+                        if value:  # 只覆盖非空值
+                            job_data[key] = value
+            except Exception as e:
+                self.logger.error(f"详情页AI解析失败: {e}")
 
         return job_data

@@ -22,7 +22,7 @@ class SearchScheduler:
         self,
         crawlers: List[BaseCrawler],
         max_workers: int = 4,
-        timeout: int = 30,
+        timeout: int = 1200,  # 增加到1200秒（20分钟），防止超时
         max_retries: int = 2
     ):
         """

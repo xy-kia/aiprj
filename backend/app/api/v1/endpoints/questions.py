@@ -8,6 +8,10 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 
 from backend.app.core.question_generator import create_question_generator, InterviewQuestion
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from backend.app.db.database import get_db
+from backend.app.api.v1.endpoints.config import get_or_create_anonymous_user, get_user_config, decrypt_api_key
 
 router = APIRouter()
 
@@ -38,7 +42,7 @@ class GenerateQuestionsResponse(BaseModel):
 
 
 @router.post("/generate-questions", response_model=GenerateQuestionsResponse)
-async def generate_questions(request: GenerateQuestionsRequest):
+async def generate_questions(request: GenerateQuestionsRequest, db: Session = Depends(get_db)):
     """
     基于岗位JD生成面试问题
 
@@ -50,8 +54,26 @@ async def generate_questions(request: GenerateQuestionsRequest):
     返回生成的面试问题列表
     """
     try:
+        # 获取匿名用户配置
+        anonymous_user = get_or_create_anonymous_user(db)
+        config = get_user_config(db, anonymous_user.id)
+
+        api_key = None
+        base_url = None
+        model = None
+
+        if config and config.enabled:
+            # 解密API密钥
+            api_key = decrypt_api_key(config.api_key) if config.api_key else None
+            base_url = config.base_url
+            model = config.default_model
+
         # 创建问题生成器
-        generator = create_question_generator()
+        generator = create_question_generator(
+            api_key=api_key,
+            model=model,
+            base_url=base_url
+        )
 
         # 生成问题
         interview_questions = generator.generate_questions(

@@ -37,6 +37,7 @@ class AnswerEvaluator:
         self,
         openai_api_key: Optional[str] = None,
         model: str = "gpt-4o-mini",
+        base_url: Optional[str] = None,
         max_concurrent_requests: int = 5
     ):
         """
@@ -45,16 +46,18 @@ class AnswerEvaluator:
         Args:
             openai_api_key: OpenAI API密钥
             model: 模型名称
+            base_url: API基础URL，如未提供则使用配置
             max_concurrent_requests: 最大并发请求数，用于限流
         """
         self.api_key = openai_api_key or settings.OPENAI_API_KEY
         self.model = model or settings.OPENAI_MODEL
+        self.base_url = base_url or settings.OPENAI_BASE_URL
         self.max_concurrent_requests = max_concurrent_requests
 
         # 初始化OpenAI客户端
         self.client = openai.OpenAI(
             api_key=self.api_key,
-            base_url=settings.OPENAI_BASE_URL
+            base_url=self.base_url
         )
 
         # 日志
@@ -586,6 +589,23 @@ class AnswerEvaluator:
 
 
 # 工具函数：创建回答评估器实例
-def create_answer_evaluator() -> AnswerEvaluator:
-    """创建回答评估器实例"""
-    return AnswerEvaluator()
+def create_answer_evaluator(
+    api_key: Optional[str] = None,
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+    max_concurrent_requests: int = 5
+) -> AnswerEvaluator:
+    """创建回答评估器实例
+
+    Args:
+        api_key: API密钥，如未提供则使用配置
+        model: 模型名称，如未提供则使用配置
+        base_url: API基础URL，如未提供则使用配置
+        max_concurrent_requests: 最大并发请求数，用于限流
+    """
+    return AnswerEvaluator(
+        openai_api_key=api_key,
+        model=model,
+        base_url=base_url,
+        max_concurrent_requests=max_concurrent_requests
+    )

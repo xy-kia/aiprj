@@ -274,7 +274,8 @@ class PlaywrightCrawler(BaseCrawler):
         self.before_request()
 
         try:
-            response = await self.page.goto(url, wait_until="networkidle")
+            # 增加超时时间到600秒（10分钟），防止请求超时
+            response = await self.page.goto(url, wait_until="networkidle", timeout=600000)  # 600秒，单位毫秒
             html = await self.page.content()
             self.after_request(response)
             return html
@@ -328,7 +329,7 @@ class APICrawler(BaseCrawler):
                     url,
                     params=params,
                     headers=self.get_api_headers(),
-                    timeout=30.0
+                    timeout=300.0  # 增加到300秒，防止API调用超时
                 )
                 response.raise_for_status()
                 self.after_request(response)

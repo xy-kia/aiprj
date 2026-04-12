@@ -11,8 +11,11 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from backend.config.settings import settings
+from backend.app.db.database import get_db
+from backend.app.db.models import User as UserModel
 
 logger = logging.getLogger(__name__)
 
@@ -22,33 +25,38 @@ router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 密码流
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
-# 模拟用户数据库（存储明文密码，在获取时哈希）
-# 注意：这是演示用的内存数据库，生产环境应使用真实数据库并存储预哈希密码
-fake_users_db = {
-    "admin": {
+# 默认用户数据（如果数据库中不存在则创建）
+DEFAULT_USERS = [
+    {
         "username": "admin",
-        "full_name": "Administrator",
         "email": "admin@example.com",
-        "password": "admin123",  # 明文存储，验证时哈希
+        "full_name": "Administrator",
+        "password": "admin123",  # 明文，将在创建时哈希
         "role": "admin",
         "permissions": ["all"],
         "disabled": False
     },
-    "operator": {
+    {
         "username": "operator",
-        "full_name": "Operator",
         "email": "operator@example.com",
-        "password": "operator123",  # 明文存储，验证时哈希
+        "full_name": "Operator",
+        "password": "operator123",  # 明文，将在创建时哈希
         "role": "operator",
         "permissions": ["dashboard", "crawler_monitor", "knowledge_management"],
         "disabled": False
+    },
+    {
+        "username": "anonymous",
+        "email": "anonymous@localhost",
+        "full_name": "Anonymous User",
+        "password": "anonymous123",  # 明文，将在创建时哈希
+        "role": "anonymous",
+        "permissions": [],  # 无特殊权限
+        "disabled": False
     }
-}
-
-# 缓存哈希后的密码
-_hashed_password_cache = {}
+]
 
 
 # 模型定义
@@ -64,6 +72,7 @@ class TokenData(BaseModel):
 
 
 class User(BaseModel):
+    id: Optional[int] = None  # 用户ID
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
@@ -83,64 +92,70 @@ def verify_password(plain_password, hashed_password):
     if not hashed_password:
         return False
     try:
-        # 限制密码长度不超过72字节（bcrypt限制）
-        plain_bytes = plain_password.encode('utf-8') if isinstance(plain_password, str) else plain_password
-        if len(plain_bytes) > 72:
-            plain_password = plain_bytes[:72].decode('utf-8', errors='ignore')
-        return pwd_context.verify(plain_password, hashed_password)
+        # 检查哈希格式
+        if hashed_password.startswith("sha256$"):
+            # 使用sha256验证（简化测试版本）
+            import hashlib
+            salt = "internship_assistant_salt_2024"
+            password_str = str(plain_password)
+            combined = salt + password_str
+            test_hash = hashlib.sha256(combined.encode('utf-8')).hexdigest()
+            expected_hash = hashed_password[7:]  # 去掉"sha256$"前缀
+            return test_hash == expected_hash
+        else:
+            # 可能是bcrypt格式，尝试使用pwd_context
+            # 限制密码长度不超过72字节（bcrypt限制）
+            plain_bytes = plain_password.encode('utf-8') if isinstance(plain_password, str) else plain_password
+            if len(plain_bytes) > 72:
+                plain_password = plain_bytes[:72].decode('utf-8', errors='ignore')
+            return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         logger.warning(f"Password verification failed: {e}")
         return False
 
 
 def get_password_hash(password):
-    """获取密码哈希，限制长度不超过72字节"""
-    # 限制密码长度不超过72字节（bcrypt限制）
-    password_bytes = password.encode('utf-8') if isinstance(password, str) else password
-    if len(password_bytes) > 72:
-        password = password_bytes[:72].decode('utf-8', errors='ignore')
-    return pwd_context.hash(password)
+    """获取密码哈希（简化版本用于测试）"""
+    # 生产环境应使用bcrypt，这里使用sha256作为测试
+    import hashlib
+    # 使用固定盐进行测试
+    salt = "internship_assistant_salt_2024"
+    password_str = str(password)
+    # 组合盐和密码
+    combined = salt + password_str
+    # 生成哈希
+    hashed = hashlib.sha256(combined.encode('utf-8')).hexdigest()
+    # 返回格式：sha256$hash
+    return f"sha256${hashed}"
 
 
-def get_user_hashed_password(username: str) -> str:
-    """获取用户的哈希密码（使用缓存避免重复哈希计算）"""
-    global _hashed_password_cache
-
-    if username in _hashed_password_cache:
-        return _hashed_password_cache[username]
-
-    if username not in fake_users_db:
-        return ""
-
-    user_dict = fake_users_db[username]
-    plain_password = user_dict.get("password", "")
-
-    if not plain_password:
-        return ""
-
-    # 计算哈希并缓存
-    try:
-        hashed = get_password_hash(plain_password)
-        _hashed_password_cache[username] = hashed
-        return hashed
-    except Exception as e:
-        logger.error(f"Failed to hash password for user {username}: {e}")
-        return ""
+def get_user_by_username(db: Session, username: str):
+    """从数据库获取用户"""
+    return db.query(UserModel).filter(UserModel.username == username).first()
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username].copy()
-        # 将明文密码替换为哈希密码
-        user_dict["hashed_password"] = get_user_hashed_password(username)
-        # 移除明文密码字段
-        user_dict.pop("password", None)
-        return UserInDB(**user_dict)
-    return None
+def get_user(db: Session, username: str):
+    """兼容性函数，保持原有接口"""
+    user = get_user_by_username(db, username)
+    if not user:
+        return None
+
+    # 转换为UserInDB格式
+    user_dict = {
+        "id": user.id,  # 添加用户ID
+        "username": user.username,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": "admin" if user.is_admin else "user",  # 根据is_admin字段确定角色
+        "permissions": ["all"] if user.is_admin else [],  # 简单权限映射
+        "disabled": not user.is_active,
+        "hashed_password": user.hashed_password
+    }
+    return UserInDB(**user_dict)
 
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(db: Session, username: str, password: str):
+    user = get_user(db, username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -159,12 +174,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if token is None or token.strip() == "":
+        raise credentials_exception
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         username: str = payload.get("sub")
@@ -173,7 +193,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -195,8 +215,11 @@ async def check_permission(user: User, permission: str):
 
 # API端点
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -255,3 +278,58 @@ async def check_user_permission(
         "user": current_user.username,
         "permission": permission
     }
+
+
+# 初始化默认用户
+def init_default_users():
+    """初始化默认用户（如果不存在）"""
+    from backend.app.db.database import get_db_session
+    try:
+        with get_db_session() as db:
+            for user_data in DEFAULT_USERS:
+                existing = db.query(UserModel).filter(UserModel.username == user_data["username"]).first()
+                if not existing:
+                    hashed_password = get_password_hash(user_data["password"])
+                    new_user = UserModel(
+                        username=user_data["username"],
+                        email=user_data["email"],
+                        full_name=user_data["full_name"],
+                        hashed_password=hashed_password,
+                        is_active=not user_data["disabled"],
+                        is_admin=(user_data["role"] == "admin")
+                    )
+                    db.add(new_user)
+                    db.commit()
+                    logger.info(f"创建默认用户: {user_data['username']}")
+    except Exception as e:
+        logger.error(f"初始化默认用户失败: {e}")
+
+
+# 应用启动时初始化默认用户（注释掉，可以在main.py中调用）
+# init_default_users()
+
+
+async def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    获取当前用户（可选），如果未认证则返回None
+    """
+    if not token or token.strip() == "":
+        return None
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        token_data = TokenData(username=username)
+        user = get_user(db, username=token_data.username)
+        return user
+    except (JWTError, HTTPException):
+        # JWT解码失败或用户不存在
+        return None
+    except Exception:
+        # 其他异常
+        return None

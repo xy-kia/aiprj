@@ -38,6 +38,7 @@ class QuestionGenerator:
         self,
         openai_api_key: Optional[str] = None,
         model: str = "gpt-4o-mini",
+        base_url: Optional[str] = None,
         cache_enabled: bool = True,
         redis_client: Optional[redis.Redis] = None,
         redis_prefix: str = "question_gen:",
@@ -49,13 +50,15 @@ class QuestionGenerator:
         Args:
             openai_api_key: OpenAI API密钥，如未提供则使用配置
             model: 模型名称
+            base_url: API基础URL，如未提供则使用配置
             cache_enabled: 是否启用缓存
             redis_client: Redis客户端实例，如未提供则根据配置创建
             redis_prefix: Redis键前缀
-            max_concurrent_requests: 最大并发请求数，用于限流
+            max_concurrent请求数，用于限流
         """
         self.api_key = openai_api_key or settings.OPENAI_API_KEY
         self.model = model or settings.OPENAI_MODEL
+        self.base_url = base_url or settings.OPENAI_BASE_URL
         self.cache_enabled = cache_enabled
         self.redis_prefix = redis_prefix
         self.max_concurrent_requests = max_concurrent_requests
@@ -66,8 +69,8 @@ class QuestionGenerator:
         # 初始化OpenAI客户端 - 增加超时时间到180秒
         self.client = openai.OpenAI(
             api_key=self.api_key,
-            base_url=settings.OPENAI_BASE_URL,
-            timeout=180.0  # 增加超时时间到180秒，适应AI生成问题的较长思考时间
+            base_url=self.base_url,
+            timeout=600.0  # 增加超时时间到600秒（10分钟），防止请求超时
         )
 
         # 初始化Redis客户端
@@ -407,7 +410,7 @@ class QuestionGenerator:
                 temperature=0.7,
                 max_tokens=4000,  # 增加token数量，适应生成多个问题
                 response_format={"type": "json_object"},
-                timeout=180.0  # 单独设置超时为180秒
+                timeout=300.0  # 增加到300秒防止超时
             )
 
             # 解析响应
@@ -802,7 +805,7 @@ class QuestionGenerator:
                 temperature=0.3,
                 max_tokens=3000,  # 增加token数量用于评估多个问题
                 response_format={"type": "json_object"},
-                timeout=120.0  # 评估的超时时间设置为120秒
+                timeout=300.0  # 增加到300秒防止超时
             )
 
             # 解析响应
@@ -864,6 +867,23 @@ class QuestionGenerator:
 
 
 # 工具函数：创建问题生成器实例
-def create_question_generator() -> QuestionGenerator:
-    """创建问题生成器实例"""
-    return QuestionGenerator()
+def create_question_generator(
+    api_key: Optional[str] = None,
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+    cache_enabled: bool = True
+) -> QuestionGenerator:
+    """创建问题生成器实例
+
+    Args:
+        api_key: API密钥，如未提供则使用配置
+        model: 模型名称，如未提供则使用配置
+        base_url: API基础URL，如未提供则使用配置
+        cache_enabled: 是否启用缓存
+    """
+    return QuestionGenerator(
+        openai_api_key=api_key,
+        model=model,
+        base_url=base_url,
+        cache_enabled=cache_enabled
+    )

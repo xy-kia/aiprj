@@ -3,6 +3,7 @@ FastAPI主应用 - 学生求职AI助手后端API
 """
 
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -22,6 +23,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 生命周期管理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用生命周期管理
+    """
+    # 启动时执行
+    logger.info("应用启动，初始化默认用户...")
+    try:
+        from backend.app.api.v1.endpoints.auth import init_default_users
+        init_default_users()
+        logger.info("默认用户初始化完成")
+    except Exception as e:
+        logger.error(f"启动初始化失败: {e}")
+
+    yield
+
+    # 关闭时执行（如果需要清理资源）
+    logger.info("应用关闭")
+
+
 # 创建FastAPI应用
 app = FastAPI(
     title=settings.APP_NAME,
@@ -29,6 +51,7 @@ app = FastAPI(
     description="学生求职AI助手后端API，提供意向解析、岗位搜索、问题生成和回答评估功能",
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    lifespan=lifespan
 )
 
 # 配置CORS
@@ -107,6 +130,20 @@ async def http_exception_handler(request, exc):
             "message": f"HTTP error: {exc.status_code}"
         }
     )
+
+
+# 启动事件：初始化默认用户
+@app.on_event("startup")
+def startup_event():
+    """应用启动时执行"""
+    logger.info("应用启动，初始化默认用户...")
+    try:
+        from backend.app.api.v1.endpoints.auth import init_default_users
+        init_default_users()
+        logger.info("默认用户初始化完成")
+    except Exception as e:
+        logger.error(f"启动初始化失败: {e}")
+
 
 if __name__ == "__main__":
     uvicorn.run(

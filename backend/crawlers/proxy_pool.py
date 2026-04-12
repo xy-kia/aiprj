@@ -231,7 +231,7 @@ class ProxyPool:
 
             async with httpx.AsyncClient(
                 proxies=proxy.url,
-                timeout=10.0
+                timeout=60.0  # 增加到60秒，防止代理测试超时
             ) as client:
                 response = await client.get(self.test_url)
                 response_time = asyncio.get_event_loop().time() - start
