@@ -282,4 +282,45 @@ export const testAIConnection = (request: TestConnectionRequest) => {
   return apiClient.post<TestConnectionResponse>('/v1/ai-config/test-connection', request)
 }
 
+// ==================== 简历解析接口 ====================
+
+export interface ParseIntentWithResumeRequest {
+  /** 求职意向文本 */
+  raw_input?: string
+  /** 简历文件（FormData） */
+  resume_file?: File
+}
+
+export interface ParseIntentWithResumeResponse {
+  analysis: Record<string, any>
+  extracted_resume_text?: string
+  keywords?: {
+    skills: string[]
+    job_types: string[]
+    locations: string[]
+    experiences: string[]
+    educations: string[]
+    related_skills?: string[]
+  }
+  confidence?: number
+}
+
+/**
+ * 解析简历和求职意向，使用LLM进行分析
+ */
+export const parseIntentWithResume = (data: ParseIntentWithResumeRequest) => {
+  const formData = new FormData()
+  if (data.raw_input) {
+    formData.append('raw_input', data.raw_input)
+  }
+  if (data.resume_file) {
+    formData.append('resume_file', data.resume_file)
+  }
+  return apiClient.post<ParseIntentWithResumeResponse>('/v1/parse-intent-with-resume', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 export default apiClient

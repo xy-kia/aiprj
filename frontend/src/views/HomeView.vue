@@ -13,6 +13,42 @@
           resize="none"
         />
 
+        <!-- 简历上传 -->
+        <div class="upload-section">
+          <div class="upload-header">
+            <span class="upload-label">上传简历（PDF格式）</span>
+            <span class="upload-hint">可选，与求职意向一起分析</span>
+          </div>
+          <el-upload
+            class="upload-demo"
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="handleFileUpload"
+            accept=".pdf,application/pdf"
+            :file-list="resumeFile ? [{ name: resumeFile.name, size: resumeFile.size }] : []"
+          >
+            <el-button type="primary" plain>
+              <Upload class="el-icon--right" />
+              选择文件
+            </el-button>
+            <template #tip>
+              <div class="el-upload__tip">
+                仅支持PDF文件，大小不超过10MB
+              </div>
+            </template>
+          </el-upload>
+          <div v-if="resumeFile" class="file-info">
+            <div class="file-name">
+              <Document style="width: 16px; height: 16px; margin-right: 8px;" />
+              {{ resumeFile.name }}
+              <span class="file-size">({{ (resumeFile.size / 1024 / 1024).toFixed(2) }} MB)</span>
+            </div>
+            <el-button type="danger" text @click="removeResumeFile">
+              移除
+            </el-button>
+          </div>
+        </div>
+
         <div class="actions">
           <el-button type="primary" size="large" :loading="loading" @click="parseUserIntent">
             智能解析
@@ -115,34 +151,64 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, ChatDotRound, Finished } from '@element-plus/icons-vue'
+import { Search, ChatDotRound, Finished, Upload, Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { parseIntent } from '@/services/api'
+import { parseIntent, parseIntentWithResume } from '@/services/api'
 
 const router = useRouter()
 
 const userInput = ref('')
+const resumeFile = ref<File | null>(null)
 const loading = ref(false)
 const parsedResult = ref<any>(null)
 
 const clearInput = () => {
   userInput.value = ''
+  resumeFile.value = null
   parsedResult.value = null
 }
 
+const handleFileUpload = (uploadFile: any) => {
+  const file = uploadFile.raw
+  if (file.type !== 'application/pdf') {
+    ElMessage.error('仅支持PDF格式')
+    return false
+  }
+  if (file.size > 10 * 1024 * 1024) { // 10MB
+    ElMessage.error('文件大小不能超过10MB')
+    return false
+  }
+  resumeFile.value = file
+  return true
+}
+
+const removeResumeFile = () => {
+  resumeFile.value = null
+}
+
 const parseUserIntent = async () => {
-  if (!userInput.value.trim()) {
-    ElMessage.warning('请输入求职意向')
+  if (!userInput.value.trim() && !resumeFile.value) {
+    ElMessage.warning('请输入求职意向或上传简历文件')
     return
   }
 
   loading.value = true
   try {
-    const response = await parseIntent({ raw_input: userInput.value })
+    let response
+    if (resumeFile.value) {
+      // 使用新的简历解析API
+      response = await parseIntentWithResume({
+        raw_input: userInput.value.trim() || undefined,
+        resume_file: resumeFile.value
+      })
+    } else {
+      // 使用原有的意向解析API
+      response = await parseIntent({ raw_input: userInput.value })
+    }
     parsedResult.value = response.data
-    ElMessage.success('意向解析成功')
+    ElMessage.success('解析成功')
   } catch (error) {
-    ElMessage.error('意向解析失败，请重试')
+    ElMessage.error('解析失败，请重试')
     console.error(error)
   } finally {
     loading.value = false
@@ -273,5 +339,57 @@ h1 {
 .feature-card p {
   color: #666;
   line-height: 1.6;
+}
+
+/* 上传区域样式 */
+.upload-section {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.upload-label {
+  font-weight: bold;
+  color: #333;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.upload-demo {
+  margin-bottom: 12px;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: white;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  color: #333;
+}
+
+.file-size {
+  margin-left: 8px;
+  color: #999;
+  font-size: 12px;
 }
 </style>

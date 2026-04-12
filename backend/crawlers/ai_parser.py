@@ -107,81 +107,150 @@ class AIParser:
 
         # 提示词模板
         self.prompt_templates = {
-            "boss_list_page": """你是一名网页数据提取专家。请从以下BOSS直聘岗位列表页的HTML内容中提取所有岗位信息。
+            "boss_list_page": """你是一名专业的招聘网站数据提取专家。请从以下BOSS直聘岗位列表页的HTML内容中提取所有岗位信息。
 
 网页内容摘要:
 {html_summary}
 
-请提取以下字段的岗位数据:
-1. 岗位标题 (title)
-2. 公司名称 (company)
-3. 工作地点 (location)
-4. 薪资范围 (salary_text)
-5. 经验要求 (experience)
-6. 学历要求 (education)
-7. 技能标签 (skills)
-8. 岗位描述 (description) - 如果有的话
-9. 岗位ID或URL (id, url)
+请仔细分析HTML内容，提取所有你能找到的岗位信息。每个岗位应包含以下字段：
+1. title: 岗位标题（如"Python开发工程师"）
+2. company: 公司名称（如"字节跳动"）
+3. location: 工作地点（如"北京"）
+4. salary_text: 薪资范围（如"8-10K"，"面议"）
+5. experience: 经验要求（如"经验不限"，"1-3年"）
+6. education: 学历要求（如"本科"，"大专"）
+7. skills: 技能标签列表（如["Python", "Django"]）
+8. description: 岗位描述（如果有的话）
+9. id: 岗位ID或标识符（如果有的话）
+10. url: 岗位详情页URL（如果有的话）
 
-要求:
-- 只提取实际存在的岗位数据，忽略模板、导航等无关内容
-- 薪资范围保持原样，如"8-10K"
-- 经验要求和学历要求保持原样，如"经验不限"、"本科"
-- 技能标签提取为列表
-- 如果没有某个字段，留空字符串或空列表
-- 输出格式为JSON数组，每个元素是一个岗位对象
+重要要求：
+1. 仔细检查HTML内容，寻找任何看起来像岗位信息的片段
+2. 即使信息不完整，也请提取你能找到的部分字段
+3. 如果同一岗位信息重复出现，只提取一次
+4. 薪资范围保持原样，不要修改格式
+5. 经验要求和学历要求保持原样
+6. 技能标签提取为列表，如果没有技能标签则留空列表
+7. 输出必须是一个有效的JSON数组，每个元素是一个岗位对象
+8. 如果找不到任何岗位，返回空数组 []
 
-请直接输出JSON数组，不要有其他内容。""",
+示例输出格式：
+[
+  {
+    "title": "Python开发工程师",
+    "company": "科技有限公司",
+    "location": "上海",
+    "salary_text": "15-25K",
+    "experience": "1-3年",
+    "education": "本科",
+    "skills": ["Python", "Django", "MySQL"],
+    "description": "负责Python后端开发",
+    "id": "abc123",
+    "url": "https://www.zhipin.com/job_detail/abc123.html"
+  }
+]
 
-            "boss_detail_page": """你是一名网页数据提取专家。请从以下BOSS直聘岗位详情页的HTML内容中提取岗位详细信息。
+请直接输出JSON数组，不要有任何其他解释或文本。""",
+
+            "boss_detail_page": """你是一名专业的招聘网站数据提取专家。请从以下BOSS直聘岗位详情页的HTML内容中提取岗位详细信息。
 
 网页内容摘要:
 {html_summary}
 
 请提取以下字段:
-1. 岗位标题 (title)
-2. 公司名称 (company)
-3. 工作地点 (location)
-4. 薪资范围 (salary_text)
-5. 经验要求 (experience)
-6. 学历要求 (education)
-7. 岗位描述 (description)
-8. 岗位要求 (requirements) - 列表形式
-9. 技能标签 (skills) - 列表形式
-10. 公司规模 (company_size) - 如果有的话
-11. 岗位ID或URL (id, url)
+1. title: 岗位标题
+2. company: 公司名称
+3. location: 工作地点
+4. salary_text: 薪资范围
+5. experience: 经验要求
+6. education: 学历要求
+7. description: 岗位描述（合并所有描述内容）
+8. requirements: 岗位要求列表（从描述中提取具体要求，每项作为一个列表元素）
+9. skills: 技能标签列表（从描述和要求中提取关键技术关键词）
+10. company_size: 公司规模（如果有的话）
+11. id: 岗位ID或标识符
+12. url: 岗位详情页URL
 
-要求:
-- 只提取实际存在的岗位数据
-- 岗位描述和岗位要求分开提取
-- 技能标签从岗位要求或描述中提取关键词
-- 输出格式为JSON对象
+重要要求：
+1. 仔细分析HTML，寻找岗位详情信息
+2. 岗位描述字段应包含所有描述文本，合并成一段
+3. 岗位要求从描述中提取，每个要求作为列表的一个元素
+4. 技能标签应该是技术关键词，如"Python", "Java", "React"等
+5. 如果某个字段没有找到，使用空字符串或空列表
+6. 输出必须是一个有效的JSON对象
 
-请直接输出JSON对象，不要有其他内容。""",
+示例输出格式：
+{
+  "title": "Python高级开发工程师",
+  "company": "科技有限公司",
+  "location": "北京",
+  "salary_text": "25-40K·15薪",
+  "experience": "3-5年",
+  "education": "本科",
+  "description": "负责公司核心业务系统开发...",
+  "requirements": ["3年以上Python开发经验", "熟悉Django/Flask框架", "有高并发系统经验"],
+  "skills": ["Python", "Django", "MySQL", "Redis", "Linux"],
+  "company_size": "1000-9999人",
+  "id": "xyz789",
+  "url": "https://www.zhipin.com/job_detail/xyz789.html"
+}
 
-            "generic_job_page": """你是一名网页数据提取专家。请从以下招聘网页的HTML内容中提取岗位信息。
+请直接输出JSON对象，不要有任何其他解释或文本。""",
+
+            "generic_job_page": """你是一名专业的招聘网站数据提取专家。请从以下招聘网页的HTML内容中提取岗位信息。
 
 网页内容摘要:
 {html_summary}
 
 请尽可能提取以下字段:
-1. 岗位标题 (title)
-2. 公司名称 (company)
-3. 工作地点 (location)
-4. 薪资范围 (salary_text)
-5. 经验要求 (experience)
-6. 学历要求 (education)
-7. 岗位描述 (description)
-8. 技能标签 (skills)
-9. 岗位ID或URL (id, url)
+1. title: 岗位标题
+2. company: 公司名称
+3. location: 工作地点
+4. salary_text: 薪资范围
+5. experience: 经验要求
+6. education: 学历要求
+7. description: 岗位描述
+8. skills: 技能标签列表
+9. id: 岗位ID或标识符
+10. url: 岗位详情页URL
 
-要求:
-- 识别网页中的岗位信息区域
-- 提取实际存在的字段
-- 保持原始文本格式
-- 输出格式为JSON对象
+重要要求：
+1. 仔细分析HTML内容，识别任何包含岗位信息的区域
+2. 即使信息不完整，也请提取你能找到的字段
+3. 如果找不到某个字段，使用空字符串或空列表
+4. 输出格式为JSON对象（单个岗位）或JSON数组（多个岗位）
+5. 如果页面包含多个岗位，请输出JSON数组；如果只有一个岗位，输出JSON对象
 
-请直接输出JSON对象，不要有其他内容。"""
+示例输出（单个岗位）：
+{
+  "title": "Java开发工程师",
+  "company": "互联网公司",
+  "location": "深圳",
+  "salary_text": "20-30K",
+  "experience": "3-5年",
+  "education": "本科",
+  "description": "负责Java后端开发...",
+  "skills": ["Java", "Spring", "MySQL"],
+  "id": "job123",
+  "url": "https://example.com/job/job123"
+}
+
+示例输出（多个岗位）：
+[
+  {
+    "title": "前端开发工程师",
+    "company": "科技公司",
+    "location": "杭州",
+    "salary_text": "15-25K",
+    "experience": "1-3年",
+    "education": "本科",
+    "skills": ["JavaScript", "React", "Vue"],
+    "id": "fe001",
+    "url": "https://example.com/job/fe001"
+  }
+]
+
+请直接输出JSON，不要有任何其他解释或文本。"""
         }
 
     def _prepare_html_summary(self, html: str, max_length: int = 8000) -> str:
@@ -245,11 +314,29 @@ class AIParser:
                     continue
 
         # 2. 提取包含岗位信息的HTML片段
-        # 查找常见的岗位容器类
+        # 查找常见的岗位容器类（包括BOSS直聘和其他招聘网站）
         container_patterns = [
+            # BOSS直聘常见类名
             r'<div[^>]*class="[^"]*job-card[^"]*"[^>]*>.*?</div>',
             r'<div[^>]*class="[^"]*job-item[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*job-list[^"]*"[^>]*>.*?</div>',
             r'<li[^>]*class="[^"]*job-item[^"]*"[^>]*>.*?</li>',
+            r'<div[^>]*class="[^"]*job-primary[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*job-box[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*info-primary[^"]*"[^>]*>.*?</div>',
+            # 通用招聘网站类名
+            r'<div[^>]*class="[^"]*position[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*job[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*recruit[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*vacancy[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*career[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*opening[^"]*"[^>]*>.*?</div>',
+            # 智联招聘、前程无忧等
+            r'<div[^>]*class="[^"]*joblist[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*jobInfo[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*jobinfo[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*el-card[^"]*"[^>]*>.*?</div>',
+            r'<div[^>]*class="[^"]*position-list[^"]*"[^>]*>.*?</div>',
         ]
 
         extracted_parts = []
@@ -262,7 +349,27 @@ class AIParser:
             summary = "提取到的岗位容器片段:\n" + "\n---\n".join(extracted_parts[:3])
             return summary[:max_length]
 
-        # 3. 简单截取中间部分
+        # 3. 尝试提取包含岗位相关关键词的文本片段
+        # 定义岗位相关关键词
+        job_keywords = ['薪资', '工资', '薪', '经验', '学历', '本科', '大专', '硕士', '公司', '岗位', '职位', '招聘', '要求', '职责', '技能', '技术']
+
+        # 查找包含这些关键词的div或span元素
+        keyword_patterns = []
+        for keyword in job_keywords:
+            # 查找包含关键词的标签，尽量获取周围上下文
+            keyword_patterns.append(r'<[^>]*>[^<]*{}[^<]*</[^>]*>'.format(re.escape(keyword)))
+
+        keyword_matches = []
+        for pattern in keyword_patterns:
+            matches = re.findall(pattern, html, re.IGNORECASE)
+            keyword_matches.extend(matches[:5])  # 每个关键词取前5个
+
+        if keyword_matches:
+            unique_matches = list(dict.fromkeys(keyword_matches))  # 去重保持顺序
+            summary = "包含岗位关键词的片段:\n" + "\n---\n".join(unique_matches[:10])
+            return summary[:max_length]
+
+        # 4. 简单截取中间部分
         half = len(html) // 2
         start = max(0, half - max_length // 2)
         end = min(len(html), half + max_length // 2)
@@ -281,6 +388,11 @@ class AIParser:
         Returns:
             岗位数据列表
         """
+        # 检查API密钥是否有效
+        if not self.api_key or self.api_key.strip() == "":
+            self.logger.warning("AI解析器API密钥为空，跳过AI解析")
+            return []
+
         try:
             # 准备HTML摘要
             html_summary = self._prepare_html_summary(html)
@@ -372,6 +484,11 @@ class AIParser:
         Returns:
             岗位详细数据
         """
+        # 检查API密钥是否有效
+        if not self.api_key or self.api_key.strip() == "":
+            self.logger.warning("AI解析器API密钥为空，跳过AI解析")
+            return {}
+
         try:
             html_summary = self._prepare_html_summary(html)
 

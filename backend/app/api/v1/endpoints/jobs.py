@@ -15,6 +15,7 @@ from backend.app.core.search_scheduler import create_search_scheduler
 from backend.app.core.match_calculator import create_match_calculator
 from backend.crawlers.boss_crawler import BOSSCrawler
 from backend.crawlers.test_crawler import TestCrawler
+from backend.crawlers.liepin_crawler import LiepinCrawler
 from backend.app.api.v1.endpoints.auth import get_current_user_optional
 from backend.app.db.database import get_db
 from backend.app.db.models import UserConfig, User
@@ -119,8 +120,13 @@ async def search_jobs(
                 headless=True,
                 user_config=user_config  # 传递用户配置给爬虫
             ),
+            LiepinCrawler(
+                use_proxy=False,
+                headless=True,
+                user_config=user_config  # 传递用户配置给爬虫
+            ),
             TestCrawler(user_config=user_config)  # 测试爬虫也传递配置
-            # 可添加其他爬虫：ZhaopinCrawler(), QianchengCrawler(), LiepinCrawler()
+            # 可添加其他爬虫：ZhaopinCrawler(), QianchengCrawler()
         ]
         print(f"[DEBUG] 创建了 {len(crawlers)} 个爬虫: {[c.platform for c in crawlers]}", file=sys.stderr)
 

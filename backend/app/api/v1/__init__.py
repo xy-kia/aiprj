@@ -3,7 +3,7 @@ API v1 路由
 """
 
 from fastapi import APIRouter
-from .endpoints import intent, jobs, questions, evaluation, auth, config
+from .endpoints import intent, jobs, questions, evaluation, auth, config, resume
 
 router = APIRouter()
 
@@ -14,3 +14,4 @@ router.include_router(questions.router, tags=["问题生成"])
 router.include_router(evaluation.router, tags=["回答评估"])
 router.include_router(auth.router, prefix="/auth", tags=["认证授权"])
 router.include_router(config.router, tags=["AI配置"])
+router.include_router(resume.router, tags=["简历解析"])
