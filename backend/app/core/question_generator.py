@@ -25,6 +25,7 @@ class InterviewQuestion:
     question_type: str  # 类型：technical, behavioral, situational, general
     target_skill: Optional[str] = None  # 考察的技能点
     jd_reference: Optional[str] = None  # JD原文依据
+    resume_reference: Optional[str] = None  # 简历原文依据（个性化问题）
     suggested_time: int = 120  # 建议回答时间（秒）
     difficulty: str = "medium"  # 难度：easy, medium, hard
     scoring_criteria: Optional[List[str]] = None  # 评分标准
@@ -62,10 +63,11 @@ class QuestionGenerator:
         # 日志
         self.logger = logging.getLogger(__name__)
 
-        # 初始化OpenAI客户端
+        # 初始化OpenAI客户端 - 增加超时时间到180秒
         self.client = openai.OpenAI(
             api_key=self.api_key,
-            base_url=settings.OPENAI_BASE_URL
+            base_url=settings.OPENAI_BASE_URL,
+            timeout=180.0  # 增加超时时间到180秒，适应AI生成问题的较长思考时间
         )
 
         # 初始化Redis客户端
@@ -185,7 +187,107 @@ class QuestionGenerator:
   - difficulty: 难度（easy/medium/hard）
   - scoring_criteria: 评分标准列表（至少3条）
 
-请直接输出JSON数组，不要有其他内容。"""
+请直接输出JSON数组，不要有其他内容。""",
+
+            "personalized_intern_general": """你是一名资深面试官，需要为实习岗位生成个性化的面试问题。
+
+岗位信息：
+- 职位：{job_title}
+- 公司：{company}
+- 岗位描述：{job_description}
+- 岗位要求：{job_requirements}
+
+求职者个人资料：
+{resume_text}
+
+请根据求职者的个人资料，生成{num_questions}个针对性的面试问题，重点考察：
+1. 个人经历与岗位的匹配度
+2. 技能掌握程度与实践经验
+3. 项目经历中的具体贡献
+4. 个人优势与岗位需求的结合点
+5. 职业发展潜力与学习能力
+
+要求：
+- 问题应紧密结合求职者的简历内容，挖掘其独特经历
+- 包含技术深度问题和个人经历挖掘问题
+- 每个问题标注考察点、建议回答时间
+- 输出格式为JSON数组，每个元素包含以下字段：
+  - question: 问题内容
+  - question_type: 问题类型（technical/behavioral/situational/general）
+  - target_skill: 考察的技能点
+  - jd_reference: 参考了JD中的哪部分要求
+  - suggested_time: 建议回答时间（秒）
+  - difficulty: 难度（easy/medium/hard）
+  - resume_reference: 参考了简历中的哪部分内容（可选）
+
+请直接输出JSON数组，不要有其他内容。""",
+
+            "personalized_intern_advanced": """你是一名资深面试官，需要为高阶实习或校招岗位生成个性化的面试问题。
+
+岗位信息：
+- 职位：{job_title}
+- 公司：{company}
+- 岗位描述：{job_description}
+- 岗位要求：{job_requirements}
+
+求职者个人资料：
+{resume_text}
+
+请根据求职者的个人资料，生成{num_questions}个有深度的个性化面试问题，重点考察：
+1. 项目深度和技术细节，结合个人经历
+2. 复杂问题解决能力与具体案例
+3. 业务理解和行业洞察，基于个人背景
+4. 系统设计能力与个人项目经验结合
+5. 团队协作和领导潜力，基于过往经历
+6. 创新思维和学习能力，结合个人特点
+
+要求：
+- 问题要有深度和挑战性，能够基于求职者经历进行深度挖掘
+- 包含开放性问题和技术深度问题，紧密结合个人经历
+- 每个问题标注考察点、建议回答时间、评分标准
+- 输出格式为JSON数组，每个元素包含以下字段：
+  - question: 问题内容
+  - question_type: 问题类型（technical/behavioral/situational/general）
+  - target_skill: 考察的技能点
+  - jd_reference: 参考了JD中的哪部分要求
+  - suggested_time: 建议回答时间（秒）
+  - difficulty: 难度（easy/medium/hard）
+  - scoring_criteria: 评分标准列表（至少3条）
+  - resume_reference: 参考了简历中的哪部分内容（可选）
+
+请直接输出JSON数组，不要有其他内容。""",
+
+            "question_evaluation": """你是一名面试问题评估专家，需要评估生成的面试问题的质量。
+
+请评估以下面试问题，给出综合评分和改进建议。
+
+岗位信息：
+- 职位：{title}
+- 公司：{company}
+- 岗位描述：{description}
+- 岗位要求：{requirements}
+
+面试问题列表：
+{questions_text}
+
+评估标准：
+1. 相关性：问题是否与岗位要求紧密相关
+2. 清晰度：问题表述是否清晰明确，无歧义
+3. 难度：问题难度是否适合目标岗位（实习/校招）
+4. 可操作性：问题是否能够有效考察候选人的能力
+5. 多样性：问题是否覆盖多个考察维度
+6. 个性化：问题是否结合了求职者个人资料（如果提供了的话）
+
+请对每个问题进行评分（1-10分），并给出整体评估和改进建议。
+输出格式为JSON对象，包含以下字段：
+  - overall_score: 整体评分（1-10）
+  - question_scores: 每个问题的评分列表，与输入顺序对应
+  - strengths: 整体优势分析（列表）
+  - weaknesses: 整体不足分析（列表）
+  - improvement_suggestions: 改进建议（列表）
+  - recommended_questions: 推荐保留的问题索引列表（从0开始）
+
+请直接输出JSON对象，不要有其他内容。"""
         }
 
     def _get_cached(self, cache_key: str) -> Optional[Any]:
@@ -239,7 +341,8 @@ class QuestionGenerator:
         self,
         job_data: Dict[str, Any],
         question_type: str = "intern_general",
-        num_questions: int = 8
+        num_questions: int = 8,
+        enable_llm_evaluation: bool = True
     ) -> List[InterviewQuestion]:
         """
         生成面试问题
@@ -248,6 +351,7 @@ class QuestionGenerator:
             job_data: 岗位数据
             question_type: 问题类型，可选 "intern_general"（一般实习）或 "intern_advanced"（高阶实习/校招）
             num_questions: 问题数量
+            enable_llm_evaluation: 是否启用LLM问题评估，默认True
 
         Returns:
             面试问题列表
@@ -262,17 +366,33 @@ class QuestionGenerator:
         # 提取岗位信息
         job_info = self._extract_job_info(job_data)
 
-        # 选择模板
-        template = self.prompt_templates.get(question_type, self.prompt_templates["intern_general"])
+        # 选择模板（如果提供了候选者资料，优先使用个性化模板）
+        candidate_profile = job_info.get("candidate_profile", "")
+        use_personalized = candidate_profile and len(candidate_profile.strip()) > 0
+
+        template_key = question_type
+        if use_personalized:
+            personalized_key = f"personalized_{question_type}"
+            if personalized_key in self.prompt_templates:
+                template_key = personalized_key
+            else:
+                self.logger.info(f"个性化模板 {personalized_key} 不存在，使用普通模板")
+
+        template = self.prompt_templates.get(template_key, self.prompt_templates["intern_general"])
 
         # 填充模板
-        prompt = template.format(
-            job_title=job_info["title"],
-            company=job_info["company"],
-            job_description=job_info["description"],
-            job_requirements=job_info["requirements"],
-            num_questions=num_questions
-        )
+        format_args = {
+            "job_title": job_info["title"],
+            "company": job_info["company"],
+            "job_description": job_info["description"],
+            "job_requirements": job_info["requirements"],
+            "num_questions": num_questions
+        }
+
+        if use_personalized and template_key.startswith("personalized_"):
+            format_args["resume_text"] = candidate_profile
+
+        prompt = template.format(**format_args)
 
         self.logger.info(f"生成问题: {job_info['title']}, 类型: {question_type}")
 
@@ -285,8 +405,9 @@ class QuestionGenerator:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2000,
-                response_format={"type": "json_object"}
+                max_tokens=4000,  # 增加token数量，适应生成多个问题
+                response_format={"type": "json_object"},
+                timeout=180.0  # 单独设置超时为180秒
             )
 
             # 解析响应
@@ -299,11 +420,36 @@ class QuestionGenerator:
             # 过滤和排序问题
             filtered_questions = self._filter_questions(questions)
 
+            # 启用LLM评估（可选）
+            if enable_llm_evaluation and len(filtered_questions) > 0:
+                try:
+                    self.logger.info(f"开始LLM问题评估，共{len(filtered_questions)}个问题")
+                    evaluation_result = self.evaluate_questions_with_llm(
+                        filtered_questions, job_info, question_type
+                    )
+
+                    # 根据评估结果进一步过滤问题
+                    if evaluation_result and "recommended_questions" in evaluation_result:
+                        evaluated_questions = self._filter_questions_by_evaluation(
+                            filtered_questions, evaluation_result, num_questions
+                        )
+                        filtered_questions = evaluated_questions
+                        self.logger.info(f"LLM评估完成，保留{len(filtered_questions)}个问题")
+                    else:
+                        self.logger.warning("LLM评估结果无效，使用原始过滤结果")
+                except Exception as e:
+                    self.logger.error(f"LLM评估过程中出错: {e}，继续使用过滤后的问题")
+
+            # 确保问题数量不超过要求
+            if len(filtered_questions) > num_questions:
+                filtered_questions = filtered_questions[:num_questions]
+
             # 缓存结果
             if self.cache_enabled:
                 cache_data = {
                     "questions": self._serialize_questions(filtered_questions),
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
+                    "llm_evaluation_enabled": enable_llm_evaluation
                 }
                 self._set_cached(cache_key, cache_data, ttl=3600)
 
@@ -336,11 +482,24 @@ class QuestionGenerator:
             if skills_text:
                 description = f"{description}\n\n所需技能: {skills_text}"
 
+        # 提取求职者个人资料（如果提供）
+        candidate_profile = job_data.get("candidate_profile", "")
+        if not candidate_profile:
+            candidate_profile = job_data.get("resume_text", "")
+
+        # 如果candidate_profile是字典，转换为字符串
+        if isinstance(candidate_profile, dict):
+            import json
+            candidate_profile = json.dumps(candidate_profile, ensure_ascii=False, indent=2)
+        elif isinstance(candidate_profile, list):
+            candidate_profile = "\n".join(candidate_profile)
+
         return {
             "title": title,
             "company": company,
             "description": description[:1000],  # 限制长度
-            "requirements": requirements_text[:1000]
+            "requirements": requirements_text[:1000],
+            "candidate_profile": candidate_profile[:2000] if candidate_profile else ""  # 限制长度
         }
 
     def _generate_cache_key(
@@ -352,11 +511,19 @@ class QuestionGenerator:
         """生成缓存键"""
         import hashlib
 
+        # 提取candidate_profile（用于个性化问题）
+        candidate_profile = job_data.get("candidate_profile", "")
+        if not candidate_profile:
+            candidate_profile = job_data.get("resume_text", "")
+
         key_data = {
             "title": job_data.get("title", ""),
             "company": job_data.get("company", ""),
             "description_hash": hashlib.md5(
                 job_data.get("description", "").encode()
+            ).hexdigest()[:16],
+            "candidate_profile_hash": hashlib.md5(
+                candidate_profile.encode() if candidate_profile else "".encode()
             ).hexdigest()[:16],
             "question_type": question_type,
             "num_questions": num_questions
@@ -424,6 +591,7 @@ class QuestionGenerator:
                     question_type=item.get("question_type", "general"),
                     target_skill=item.get("target_skill"),
                     jd_reference=item.get("jd_reference"),
+                    resume_reference=item.get("resume_reference"),
                     suggested_time=int(item.get("suggested_time", 120)),
                     difficulty=item.get("difficulty", "medium"),
                     scoring_criteria=scoring_criteria
@@ -515,6 +683,7 @@ class QuestionGenerator:
                 "question_type": q.question_type,
                 "target_skill": q.target_skill,
                 "jd_reference": q.jd_reference,
+                "resume_reference": q.resume_reference,
                 "suggested_time": q.suggested_time,
                 "difficulty": q.difficulty,
                 "scoring_criteria": q.scoring_criteria
@@ -568,7 +737,8 @@ class QuestionGenerator:
         self,
         job_data: Dict[str, Any],
         question_type: str = "intern_general",
-        num_questions: int = 8
+        num_questions: int = 8,
+        enable_llm_evaluation: bool = True
     ) -> List[InterviewQuestion]:
         """异步生成面试问题（带限流）"""
         async with self._semaphore:
@@ -576,8 +746,121 @@ class QuestionGenerator:
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
                 None,
-                lambda: self.generate_questions(job_data, question_type, num_questions)
+                lambda: self.generate_questions(job_data, question_type, num_questions, enable_llm_evaluation)
             )
+
+    def evaluate_questions_with_llm(
+        self,
+        questions: List[InterviewQuestion],
+        job_info: Dict[str, Any],
+        question_type: str = "intern_general"
+    ) -> Dict[str, Any]:
+        """
+        使用LLM评估生成的问题质量
+
+        Args:
+            questions: 面试问题列表
+            job_info: 岗位信息字典
+            question_type: 问题类型
+
+        Returns:
+            评估结果字典
+        """
+        if not questions:
+            return {"overall_score": 0, "question_scores": [], "recommended_questions": []}
+
+        self.logger.info(f"开始LLM问题评估，共{len(questions)}个问题")
+
+        # 准备问题文本
+        questions_text = ""
+        for i, q in enumerate(questions):
+            questions_text += f"{i+1}. {q.question} (类型: {q.question_type}, 难度: {q.difficulty})\n"
+
+        # 获取评估模板
+        template = self.prompt_templates.get("question_evaluation")
+        if not template:
+            self.logger.warning("问题评估模板未找到，跳过评估")
+            return {"overall_score": 0, "question_scores": [], "recommended_questions": list(range(len(questions)))}
+
+        # 填充模板
+        prompt = template.format(
+            title=job_info["title"],
+            company=job_info["company"],
+            description=job_info["description"],
+            requirements=job_info["requirements"],
+            questions_text=questions_text
+        )
+
+        try:
+            # 调用LLM进行评估
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "你是一名专业的面试问题评估专家。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=3000,  # 增加token数量用于评估多个问题
+                response_format={"type": "json_object"},
+                timeout=120.0  # 评估的超时时间设置为120秒
+            )
+
+            # 解析响应
+            content = response.choices[0].message.content
+            evaluation_result = json.loads(content)
+
+            self.logger.info(f"问题评估完成，整体评分: {evaluation_result.get('overall_score', 'N/A')}")
+            return evaluation_result
+
+        except Exception as e:
+            self.logger.error(f"LLM问题评估失败: {e}")
+            # 返回默认评估结果，推荐所有问题
+            return {
+                "overall_score": 7.0,
+                "question_scores": [7.0] * len(questions),
+                "strengths": ["问题生成正常"],
+                "weaknesses": ["评估服务暂时不可用"],
+                "improvement_suggestions": ["请确保问题与岗位要求相关"],
+                "recommended_questions": list(range(len(questions)))
+            }
+
+    def _filter_questions_by_evaluation(
+        self,
+        questions: List[InterviewQuestion],
+        evaluation_result: Dict[str, Any],
+        num_questions: int
+    ) -> List[InterviewQuestion]:
+        """根据评估结果过滤问题"""
+        if not questions or not evaluation_result:
+            return questions
+
+        recommended_indices = evaluation_result.get("recommended_questions", [])
+        if not recommended_indices:
+            # 如果没有推荐索引，使用评分排序
+            question_scores = evaluation_result.get("question_scores", [])
+            if question_scores and len(question_scores) == len(questions):
+                # 根据评分排序，选择最高分的问题
+                sorted_indices = sorted(range(len(questions)), key=lambda i: question_scores[i], reverse=True)
+                selected_indices = sorted_indices[:num_questions]
+                selected_questions = [questions[i] for i in selected_indices]
+                self.logger.info(f"根据评分选择了 {len(selected_questions)} 个问题，最高分: {max(question_scores) if question_scores else 'N/A'}")
+                return selected_questions
+            else:
+                # 无法评估，返回原始问题
+                return questions[:num_questions]
+
+        # 使用推荐的问题索引
+        valid_indices = [i for i in recommended_indices if 0 <= i < len(questions)]
+        if not valid_indices:
+            return questions[:num_questions]
+
+        # 如果推荐的问题数量超过需求，取前N个
+        selected_indices = valid_indices[:num_questions]
+        selected_questions = [questions[i] for i in selected_indices]
+
+        self.logger.info(f"根据LLM推荐选择了 {len(selected_questions)} 个问题")
+
+        return selected_questions
 
 
 # 工具函数：创建问题生成器实例

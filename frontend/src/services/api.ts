@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus'
 // 创建axios实例
 const apiClient: AxiosInstance = axios.create({
   baseURL: '/api',
-  timeout: 10000,
+  timeout: 300000,  // 增加到300秒（5分钟），适应AI生成问题的较长思考时间
   headers: {
     'Content-Type': 'application/json'
   }
@@ -130,21 +130,37 @@ export const searchJobs = (data: SearchJobsRequest) => {
 
 // 问题生成
 export interface GenerateQuestionsRequest {
-  job_id: number
-  question_type?: 'technical' | 'behavioral' | 'mixed'
-  count?: number
+  job_data: {
+    title: string
+    company: string
+    description: string
+    requirements?: string[]
+    skills?: string[]
+    candidate_profile?: string  // 求职者个人资料（简历文本）
+  }
+  question_type?: 'intern_general' | 'intern_advanced'  // 一般实习或高阶实习/校招
+  num_questions?: number
+  enable_llm_evaluation?: boolean
 }
 
 export interface QuestionItem {
   id: number
-  type: string
+  type: string  // technical/behavioral/situational/general
+  question_type?: string  // technical/behavioral/situational/general (后端返回字段)
   question: string
   hint?: string
-  sample_answer?: string
+  target_skill?: string
+  jd_reference?: string
+  resume_reference?: string
+  suggested_time?: number
+  difficulty?: string
+  scoring_criteria?: string[]
 }
 
 export interface GenerateQuestionsResponse {
   questions: QuestionItem[]
+  total_count: number
+  question_type: string
 }
 
 export const generateQuestions = (data: GenerateQuestionsRequest) => {

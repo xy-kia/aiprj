@@ -17,6 +17,7 @@ class GenerateQuestionsRequest(BaseModel):
     job_data: Dict[str, Any]
     question_type: Optional[str] = "intern_general"  # intern_general 或 intern_advanced
     num_questions: Optional[int] = 8
+    enable_llm_evaluation: Optional[bool] = True  # 是否启用LLM问题评估
 
 
 class QuestionResponse(BaseModel):
@@ -24,6 +25,7 @@ class QuestionResponse(BaseModel):
     question_type: str
     target_skill: Optional[str] = None
     jd_reference: Optional[str] = None
+    resume_reference: Optional[str] = None  # 简历原文依据（个性化问题）
     suggested_time: int
     difficulty: str
     scoring_criteria: Optional[List[str]] = None
@@ -40,9 +42,10 @@ async def generate_questions(request: GenerateQuestionsRequest):
     """
     基于岗位JD生成面试问题
 
-    - **job_data**: 岗位数据（包含title、company、description、requirements、skills等）
+    - **job_data**: 岗位数据（包含title、company、description、requirements、skills等，可包含candidate_profile/resume_text字段用于个性化问题）
     - **question_type**: 问题类型，可选 "intern_general"（一般实习）或 "intern_advanced"（高阶实习/校招）
     - **num_questions**: 生成的问题数量
+    - **enable_llm_evaluation**: 是否启用LLM问题评估，默认True
 
     返回生成的面试问题列表
     """
@@ -54,7 +57,8 @@ async def generate_questions(request: GenerateQuestionsRequest):
         interview_questions = generator.generate_questions(
             job_data=request.job_data,
             question_type=request.question_type or "intern_general",
-            num_questions=request.num_questions or 8
+            num_questions=request.num_questions or 8,
+            enable_llm_evaluation=request.enable_llm_evaluation if request.enable_llm_evaluation is not None else True
         )
 
         # 转换为响应模型
@@ -65,6 +69,7 @@ async def generate_questions(request: GenerateQuestionsRequest):
                 question_type=q.question_type,
                 target_skill=q.target_skill,
                 jd_reference=q.jd_reference,
+                resume_reference=q.resume_reference,
                 suggested_time=q.suggested_time,
                 difficulty=q.difficulty,
                 scoring_criteria=q.scoring_criteria

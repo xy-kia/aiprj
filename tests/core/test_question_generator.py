@@ -252,7 +252,7 @@ class TestQuestionGenerator(unittest.TestCase):
             "requirements": ["要求1", "要求2"]
         }
 
-        questions = self.generator.generate_questions(job_data, "intern_general", 5)
+        questions = self.generator.generate_questions(job_data, "intern_general", 5, enable_llm_evaluation=False)
 
         # 应该返回缓存的问题
         self.assertEqual(len(questions), 1)
@@ -286,7 +286,7 @@ class TestQuestionGenerator(unittest.TestCase):
             "requirements": ["要求1", "要求2"]
         }
 
-        questions = self.generator.generate_questions(job_data, "intern_general", 5)
+        questions = self.generator.generate_questions(job_data, "intern_general", 5, enable_llm_evaluation=False)
 
         # 应该返回新生成的问题
         self.assertEqual(len(questions), 1)
@@ -308,7 +308,7 @@ class TestQuestionGenerator(unittest.TestCase):
             "requirements": ["要求1", "要求2"]
         }
 
-        questions = self.generator.generate_questions(job_data, "intern_general", 5)
+        questions = self.generator.generate_questions(job_data, "intern_general", 5, enable_llm_evaluation=False)
 
         # 应该返回备用问题
         self.assertGreater(len(questions), 0)

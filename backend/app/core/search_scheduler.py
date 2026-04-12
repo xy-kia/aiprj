@@ -190,7 +190,13 @@ class SearchScheduler:
 
                 # 调用爬虫的搜索方法
                 # 注意：这里假设爬虫的search_jobs是生成器
-                if hasattr(crawler, 'search_jobs'):
+                if hasattr(crawler, 'async_search_jobs'):
+                    # 异步方法优先
+                    async for job in crawler.async_search_jobs(keyword, city, page):
+                        if job:
+                            page_jobs.append(job)
+
+                elif hasattr(crawler, 'search_jobs'):
                     # 同步方法：在线程池中执行
                     with ThreadPoolExecutor(max_workers=1) as executor:
                         future = executor.submit(
@@ -202,12 +208,6 @@ class SearchScheduler:
                         for job in page_results:
                             if job:
                                 page_jobs.append(job)
-
-                elif hasattr(crawler, 'async_search_jobs'):
-                    # 异步方法
-                    async for job in crawler.async_search_jobs(keyword, city, page):
-                        if job:
-                            page_jobs.append(job)
 
                 # 如果没有获取到岗位，可能已经到达最后一页
                 if not page_jobs:

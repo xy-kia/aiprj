@@ -181,59 +181,183 @@ class BOSSCrawler(PlaywrightCrawler):
         jobs = []
 
         try:
-            # 解析JSON数据（BOSS直聘页面包含JSON数据）
-            json_pattern = r'window\.__INITIAL_STATE__\s*=\s*({.*?})\s*;'
-            match = re.search(json_pattern, html, re.DOTALL)
+            # 尝试多种JSON模式匹配
+            json_patterns = [
+                r'window\.__INITIAL_STATE__\s*=\s*({.*?})\s*;',
+                r'window\.__INITIAL_STATE__\s*=\s*({.*?})\s*</script>',
+                r'<script id="__NEXT_DATA__"[^>]*>({.*?})</script>',
+                r'<script[^>]*>window\.__NUXT__\s*=\s*({.*?});</script>',
+                r'<script[^>]*>window\.__REDUX_STATE__\s*=\s*({.*?});</script>',
+            ]
 
-            if match:
-                json_str = match.group(1)
-                data = json.loads(json_str)
+            data = None
+            json_str = None
 
-                # 提取岗位列表（实际路径需要根据页面结构调整）
-                job_list = data.get("jobList", {}).get("list", [])
+            for pattern in json_patterns:
+                match = re.search(pattern, html, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+                    try:
+                        data = json.loads(json_str)
+                        self.logger.debug(f"使用JSON模式成功解析数据: {pattern[:30]}...")
+                        break
+                    except json.JSONDecodeError as e:
+                        self.logger.warning(f"JSON解析失败，尝试下一个模式: {e}")
+                        continue
 
-                for job_data in job_list:
-                    parsed = self._parse_job_from_json(job_data)
-                    if parsed:
-                        jobs.append(parsed)
+            if data:
+                # 尝试多个可能的路径来获取岗位列表
+                job_list = None
+                possible_paths = [
+                    data.get("jobList", {}).get("list", []),
+                    data.get("jobs", []),
+                    data.get("list", []),
+                    data.get("data", {}).get("list", []),
+                    data.get("result", {}).get("list", []),
+                ]
 
-            else:
-                # 备用方案：HTML解析
+                for path in possible_paths:
+                    if isinstance(path, list) and len(path) > 0:
+                        job_list = path
+                        self.logger.debug(f"找到岗位列表路径，数量: {len(job_list)}")
+                        break
+
+                if job_list:
+                    for job_data in job_list:
+                        parsed = self._parse_job_from_json(job_data)
+                        if parsed:
+                            jobs.append(parsed)
+                else:
+                    self.logger.warning("未找到岗位列表路径，尝试直接搜索jobs字段")
+                    # 递归搜索jobs字段
+                    def find_jobs(obj, depth=0):
+                        if depth > 5:  # 防止无限递归
+                            return []
+                        if isinstance(obj, list):
+                            # 检查列表中的元素是否包含岗位数据
+                            if len(obj) > 0 and isinstance(obj[0], dict):
+                                # 检查是否有常见字段
+                                sample = obj[0]
+                                if any(key in sample for key in ['jobName', 'title', 'company', 'brandName']):
+                                    return obj
+                            return []
+                        if isinstance(obj, dict):
+                            for key, value in obj.items():
+                                if 'job' in key.lower() or 'list' in key.lower():
+                                    result = find_jobs(value, depth+1)
+                                    if result:
+                                        return result
+                            # 递归搜索所有值
+                            for value in obj.values():
+                                result = find_jobs(value, depth+1)
+                                if result:
+                                    return result
+                        return []
+
+                    found_jobs = find_jobs(data)
+                    if found_jobs:
+                        self.logger.info(f"通过递归搜索找到岗位数据: {len(found_jobs)} 条")
+                        for job_data in found_jobs:
+                            parsed = self._parse_job_from_json(job_data)
+                            if parsed:
+                                jobs.append(parsed)
+
+            # 如果JSON解析失败或未找到岗位数据，尝试HTML解析
+            if not jobs:
+                self.logger.info("JSON解析未找到数据，尝试HTML解析")
                 from bs4 import BeautifulSoup
                 soup = BeautifulSoup(html, 'html.parser')
 
                 # 查找岗位卡片（根据实际DOM结构调整）
-                job_cards = soup.find_all('div', class_=re.compile(r'job-card'))
+                job_cards = soup.find_all('div', class_=re.compile(r'job-card|job-item|job-list-item'))
 
-                for card in job_cards[:20]:  # 限制数量
+                if not job_cards:
+                    # 尝试其他常见类名
+                    job_cards = soup.find_all('li', class_=re.compile(r'job-item|job-card'))
+
+                for card in job_cards[:30]:  # 限制数量
                     job = self._parse_job_from_html(card)
                     if job:
                         jobs.append(job)
 
+            self.logger.info(f"解析列表页完成，共找到 {len(jobs)} 个岗位")
+
         except Exception as e:
-            self.logger.error(f"解析列表页失败: {e}")
+            self.logger.error(f"解析列表页失败: {e}", exc_info=True)
 
         return jobs
 
     def _parse_job_from_json(self, job_data: Dict) -> Optional[Dict[str, Any]]:
         """从JSON数据解析岗位"""
         try:
-            # 根据实际数据结构调整
-            job = {
-                "id": job_data.get("encryptId") or job_data.get("id", ""),
-                "title": job_data.get("jobName", ""),
-                "company": job_data.get("brandName", ""),
-                "location": job_data.get("cityName", ""),
-                "salary_text": job_data.get("salaryDesc", ""),
-                "experience": job_data.get("jobExperience", ""),
-                "education": job_data.get("jobDegree", ""),
-                "skills": job_data.get("skills", []),
-                "description": job_data.get("jobDescription", ""),
-                "url": f"{self.base_url}/job_detail/{job_data.get('encryptId', '')}.html"
+            # 支持多种字段名映射
+            field_mappings = {
+                "id": ["encryptId", "id", "jobId", "positionId"],
+                "title": ["jobName", "title", "positionName", "name"],
+                "company": ["brandName", "company", "companyName", "employer"],
+                "location": ["cityName", "location", "city", "workLocation"],
+                "salary_text": ["salaryDesc", "salary", "salaryText", "salaryInfo"],
+                "experience": ["jobExperience", "experience", "workExperience", "exp"],
+                "education": ["jobDegree", "education", "degree", "academic"],
+                "skills": ["skills", "tags", "skillTags", "requirements"],
+                "description": ["jobDescription", "description", "jobDetail", "content"],
             }
+
+            def get_field(data, keys):
+                for key in keys:
+                    if key in data:
+                        value = data[key]
+                        # 确保列表和字符串类型正确
+                        if isinstance(value, list):
+                            return value
+                        if isinstance(value, str):
+                            return value.strip()
+                        return value
+                return None
+
+            # 提取字段
+            job_id = get_field(job_data, field_mappings["id"]) or ""
+            title = get_field(job_data, field_mappings["title"]) or ""
+            company = get_field(job_data, field_mappings["company"]) or ""
+            location = get_field(job_data, field_mappings["location"]) or ""
+            salary_text = get_field(job_data, field_mappings["salary_text"]) or ""
+            experience = get_field(job_data, field_mappings["experience"]) or ""
+            education = get_field(job_data, field_mappings["education"]) or ""
+            skills = get_field(job_data, field_mappings["skills"]) or []
+            description = get_field(job_data, field_mappings["description"]) or ""
+
+            # 确保skills是列表
+            if isinstance(skills, str):
+                skills = [s.strip() for s in skills.split(",") if s.strip()]
+            elif not isinstance(skills, list):
+                skills = []
+
+            # 构建URL
+            url = ""
+            if job_id:
+                url = f"{self.base_url}/job_detail/{job_id}.html"
+            elif "url" in job_data:
+                url = job_data["url"]
+
+            job = {
+                "id": str(job_id) if job_id else "",
+                "title": title,
+                "company": company,
+                "location": location,
+                "salary_text": salary_text,
+                "experience": experience,
+                "education": education,
+                "skills": skills,
+                "description": description,
+                "url": url
+            }
+
+            # 记录解析成功的日志
+            self.logger.debug(f"解析岗位: {title} - {company}")
+
             return job
         except Exception as e:
-            self.logger.warning(f"解析JSON岗位数据失败: {e}")
+            self.logger.warning(f"解析JSON岗位数据失败: {e}", exc_info=True)
             return None
 
     def _parse_job_from_html(self, element) -> Optional[Dict[str, Any]]:

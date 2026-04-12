@@ -47,7 +47,7 @@ app.add_middleware(create_exception_handler_middleware())
 app.add_middleware(create_logging_middleware())
 
 # 注册路由
-# 注意：前端代理配置期望 /api 前缀，所以这里使用 /api/v1
+# 注意：前端代理配置期望 /v1 前缀，所以这里使用 /v1
 app.include_router(api_v1_router, prefix="/v1")
 
 # 健康检查端点
