@@ -1,0 +1,26 @@
+{
+  "id": "ZPIN20240008",
+  "title": "Go开发工程师实习生",
+  "company": "滴滴出行",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/出行",
+  "location": "北京",
+  "job_type": "实习",
+  "salary_min": 5000,
+  "salary_max": 8000,
+  "salary_months": 15,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "滴滴出行基础平台部招聘Go开发实习生，参与高并发分布式系统开发。",
+  "requirements": [
+    "计算机相关专业",
+    "熟悉Go语言",
+    "了解分布式系统",
+    "熟悉MySQL和Redis"
+  ],
+  "skills": ["Go", "Gin", "MySQL", "Redis", "微服务"],
+  "posted_date": "2026-04-06",
+  "source": "zhaopin",
+  "url": "https://www.zhaopin.com/job/xxx",
+  "status": "active"
+}

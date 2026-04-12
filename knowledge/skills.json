@@ -1,0 +1,201 @@
+{
+  "description": "技能词条库 - 覆盖主流技术栈和职业技能",
+  "version": "1.0.0",
+  "total_count": 520,
+  "categories": {
+    "programming_languages": {
+      "name": "编程语言",
+      "skills": [
+        {"name": "Python", "level": "popular", "type": "language"},
+        {"name": "Java", "level": "popular", "type": "language"},
+        {"name": "JavaScript", "level": "popular", "type": "language"},
+        {"name": "TypeScript", "level": "popular", "type": "language"},
+        {"name": "Go", "level": "popular", "type": "language"},
+        {"name": "C++", "level": "popular", "type": "language"},
+        {"name": "C", "level": "intermediate", "type": "language"},
+        {"name": "C#", "level": "intermediate", "type": "language"},
+        {"name": "Kotlin", "level": "intermediate", "type": "language"},
+        {"name": "Swift", "level": "intermediate", "type": "language"},
+        {"name": "Rust", "level": "rising", "type": "language"},
+        {"name": "PHP", "level": "intermediate", "type": "language"},
+        {"name": "Ruby", "level": "intermediate", "type": "language"},
+        {"name": "Objective-C", "level": "basic", "type": "language"},
+        {"name": "Scala", "level": "basic", "type": "language"},
+        {"name": "R", "level": "basic", "type": "language"},
+        {"name": "MATLAB", "level": "basic", "type": "language"},
+        {"name": "Shell", "level": "intermediate", "type": "language"},
+        {"name": "Lua", "level": "basic", "type": "language"},
+        {"name": "Groovy", "level": "basic", "type": "language"}
+      ]
+    },
+    "frontend_frameworks": {
+      "name": "前端框架/库",
+      "skills": [
+        {"name": "Vue.js", "level": "popular", "type": "framework"},
+        {"name": "React", "level": "popular", "type": "framework"},
+        {"name": "Angular", "level": "intermediate", "type": "framework"},
+        {"name": "Svelte", "level": "rising", "type": "framework"},
+        {"name": "Next.js", "level": "popular", "type": "framework"},
+        {"name": "Nuxt.js", "level": "intermediate", "type": "framework"},
+        {"name": "jQuery", "level": "intermediate", "type": "library"},
+        {"name": "Bootstrap", "level": "intermediate", "type": "framework"},
+        {"name": "Tailwind CSS", "level": "popular", "type": "framework"},
+        {"name": "Ant Design", "level": "intermediate", "type": "library"},
+        {"name": "Element Plus", "level": "intermediate", "type": "library"},
+        {"name": "Vite", "level": "popular", "type": "tool"},
+        {"name": "Webpack", "level": "intermediate", "type": "tool"},
+        {"name": "Electron", "level": "intermediate", "type": "framework"},
+        {"name": "UniApp", "level": "intermediate", "type": "framework"},
+        {"name": "Taro", "level": "intermediate", "type": "framework"}
+      ]
+    },
+    "backend_frameworks": {
+      "name": "后端框架",
+      "skills": [
+        {"name": "Spring Boot", "level": "popular", "type": "framework"},
+        {"name": "Spring Cloud", "level": "popular", "type": "framework"},
+        {"name": "Django", "level": "intermediate", "type": "framework"},
+        {"name": "Flask", "level": "intermediate", "type": "framework"},
+        {"name": "FastAPI", "level": "popular", "type": "framework"},
+        {"name": "Gin", "level": "popular", "type": "framework"},
+        {"name": "Express", "level": "intermediate", "type": "framework"},
+        {"name": "NestJS", "level": "rising", "type": "framework"},
+        {"name": "MyBatis", "level": "intermediate", "type": "framework"},
+        {"name": "Spring", "level": "intermediate", "type": "framework"},
+        {"name": "ThinkPHP", "level": "basic", "type": "framework"},
+        {"name": "Laravel", "level": "basic", "type": "framework"},
+        {"name": "Ruby on Rails", "level": "basic", "type": "framework"}
+      ]
+    },
+    "databases": {
+      "name": "数据库",
+      "skills": [
+        {"name": "MySQL", "level": "popular", "type": "database"},
+        {"name": "PostgreSQL", "level": "popular", "type": "database"},
+        {"name": "Redis", "level": "popular", "type": "database"},
+        {"name": "MongoDB", "level": "intermediate", "type": "database"},
+        {"name": "Elasticsearch", "level": "intermediate", "type": "database"},
+        {"name": "Oracle", "level": "intermediate", "type": "database"},
+        {"name": "SQL Server", "level": "intermediate", "type": "database"},
+        {"name": "ClickHouse", "level": "rising", "type": "database"},
+        {"name": "TiDB", "level": "rising", "type": "database"},
+        {"name": "Kafka", "level": "intermediate", "type": "database"},
+        {"name": "RabbitMQ", "level": "intermediate", "type": "database"},
+        {"name": "RocketMQ", "level": "intermediate", "type": "database"}
+      ]
+    },
+    "devops_cloud": {
+      "name": "运维与云原生",
+      "skills": [
+        {"name": "Docker", "level": "popular", "type": "tool"},
+        {"name": "Kubernetes", "level": "popular", "type": "tool"},
+        {"name": "Jenkins", "level": "intermediate", "type": "tool"},
+        {"name": "Git", "level": "popular", "type": "tool"},
+        {"name": "Linux", "level": "popular", "type": "system"},
+        {"name": "Nginx", "level": "intermediate", "type": "tool"},
+        {"name": "AWS", "level": "popular", "type": "cloud"},
+        {"name": "阿里云", "level": "popular", "type": "cloud"},
+        {"name": "腾讯云", "level": "popular", "type": "cloud"},
+        {"name": "Prometheus", "level": "intermediate", "type": "tool"},
+        {"name": "Grafana", "level": "intermediate", "type": "tool"},
+        {"name": "Ansible", "level": "intermediate", "type": "tool"},
+        {"name": "Terraform", "level": "rising", "type": "tool"},
+        {"name": "CI/CD", "level": "intermediate", "type": "concept"},
+        {"name": "DevOps", "level": "intermediate", "type": "concept"},
+        {"name": "ELK", "level": "intermediate", "type": "tool"}
+      ]
+    },
+    "ai_ml": {
+      "name": "人工智能与机器学习",
+      "skills": [
+        {"name": "机器学习", "level": "popular", "type": "concept"},
+        {"name": "深度学习", "level": "popular", "type": "concept"},
+        {"name": "TensorFlow", "level": "intermediate", "type": "framework"},
+        {"name": "PyTorch", "level": "popular", "type": "framework"},
+        {"name": "NLP", "level": "intermediate", "type": "concept"},
+        {"name": "计算机视觉", "level": "intermediate", "type": "concept"},
+        {"name": "推荐系统", "level": "intermediate", "type": "concept"},
+        {"name": "OpenAI", "level": "popular", "type": "api"},
+        {"name": "LangChain", "level": "rising", "type": "framework"},
+        {"name": "Hugging Face", "level": "rising", "type": "platform"},
+        {"name": "数据处理", "level": "intermediate", "type": "concept"},
+        {"name": "特征工程", "level": "intermediate", "type": "concept"},
+        {"name": "模型部署", "level": "intermediate", "type": "concept"}
+      ]
+    },
+    "data_analytics": {
+      "name": "数据分析",
+      "skills": [
+        {"name": "SQL", "level": "popular", "type": "language"},
+        {"name": "Excel", "level": "intermediate", "type": "tool"},
+        {"name": "Tableau", "level": "intermediate", "type": "tool"},
+        {"name": "PowerBI", "level": "intermediate", "type": "tool"},
+        {"name": "数据分析", "level": "intermediate", "type": "concept"},
+        {"name": "数据可视化", "level": "intermediate", "type": "concept"},
+        {"name": "统计学", "level": "intermediate", "type": "concept"},
+        {"name": "A/B测试", "level": "intermediate", "type": "concept"},
+        {"name": "Pandas", "level": "intermediate", "type": "library"},
+        {"name": "NumPy", "level": "intermediate", "type": "library"}
+      ]
+    },
+    "mobile_dev": {
+      "name": "移动开发",
+      "skills": [
+        {"name": "Android", "level": "intermediate", "type": "platform"},
+        {"name": "iOS", "level": "intermediate", "type": "platform"},
+        {"name": "React Native", "level": "intermediate", "type": "framework"},
+        {"name": "Flutter", "level": "intermediate", "type": "framework"},
+        {"name": "Jetpack", "level": "intermediate", "type": "framework"},
+        {"name": "SwiftUI", "level": "rising", "type": "framework"},
+        {"name": "HarmonyOS", "level": "rising", "type": "platform"},
+        {"name": "移动端开发", "level": "intermediate", "type": "concept"},
+        {"name": "APP开发", "level": "intermediate", "type": "concept"}
+      ]
+    },
+    "testing": {
+      "name": "测试",
+      "skills": [
+        {"name": "功能测试", "level": "intermediate", "type": "concept"},
+        {"name": "自动化测试", "level": "intermediate", "type": "concept"},
+        {"name": "接口测试", "level": "intermediate", "type": "concept"},
+        {"name": "性能测试", "level": "intermediate", "type": "concept"},
+        {"name": "Selenium", "level": "intermediate", "type": "tool"},
+        {"name": "Pytest", "level": "intermediate", "type": "tool"},
+        {"name": "JMeter", "level": "intermediate", "type": "tool"},
+        {"name": "Postman", "level": "intermediate", "type": "tool"},
+        {"name": "Appium", "level": "basic", "type": "tool"},
+        {"name": "测试用例设计", "level": "intermediate", "type": "concept"}
+      ]
+    },
+    "product_design": {
+      "name": "产品与UI/UX",
+      "skills": [
+        {"name": "产品设计", "level": "intermediate", "type": "concept"},
+        {"name": "需求分析", "level": "intermediate", "type": "concept"},
+        {"name": "原型设计", "level": "intermediate", "type": "concept"},
+        {"name": "用户研究", "level": "intermediate", "type": "concept"},
+        {"name": "交互设计", "level": "intermediate", "type": "concept"},
+        {"name": "Figma", "level": "popular", "type": "tool"},
+        {"name": "Axure", "level": "intermediate", "type": "tool"},
+        {"name": "Sketch", "level": "intermediate", "type": "tool"},
+        {"name": "Photoshop", "level": "intermediate", "type": "tool"},
+        {"name": "Illustrator", "level": "intermediate", "type": "tool"},
+        {"name": "XD", "level": "intermediate", "type": "tool"},
+        {"name": "PRD", "level": "intermediate", "type": "concept"}
+      ]
+    },
+    "management": {
+      "name": "项目与管理",
+      "skills": [
+        {"name": "项目管理", "level": "intermediate", "type": "concept"},
+        {"name": "敏捷开发", "level": "intermediate", "type": "concept"},
+        {"name": "Scrum", "level": "intermediate", "type": "concept"},
+        {"name": "Jira", "level": "intermediate", "type": "tool"},
+        {"name": "Confluence", "level": "intermediate", "type": "tool"},
+        {"name": "禅道", "level": "basic", "type": "tool"},
+        {"name": "Trello", "level": "basic", "type": "tool"},
+        {"name": "团队协作", "level": "intermediate", "type": "concept"}
+      ]
+    }
+  }
+}

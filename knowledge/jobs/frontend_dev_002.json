@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240021",
+  "title": "前端开发实习生",
+  "company": "阿里巴巴",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/电商",
+  "location": "杭州",
+  "job_type": "实习",
+  "salary_min": 8000,
+  "salary_max": 13000,
+  "salary_months": 16,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "阿里前端开发实习生，参与淘宝/天猫前端项目，使用Vue3和React开发用户界面。",
+  "requirements": [
+    "计算机或设计相关专业本科",
+    "熟悉HTML/CSS/JavaScript",
+    "掌握Vue/React至少一个框架",
+    "有前端项目经验者优先"
+  ],
+  "skills": ["Vue.js", "React", "TypeScript", "HTML5", "CSS3", "Webpack", "前端工程化"],
+  "posted_date": "2026-04-10",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}

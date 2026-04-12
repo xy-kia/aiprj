@@ -1,0 +1,286 @@
+# Alerting rules for Internship AI Assistant
+groups:
+  # 系统级告警
+  - name: system
+    rules:
+      # 系统可用性监控（P0级）- MON-005
+      - alert: SystemAvailabilityLow
+        expr: |
+          (1 - avg(rate(probe_success{job="blackbox", instance=~".*internship.example.com.*"}[5m]))) * 100 > 1
+        for: 5m
+        labels:
+          severity: critical
+          environment: production
+          service: system
+          component: availability
+          priority: P0
+        annotations:
+          summary: "系统可用性低于99%"
+          description: "{{ $labels.instance }} 可用性为 {{ $value | humanizePercentage }}，阈值：99%"
+          runbook_url: "https://wiki.example.com/runbooks/system-availability"
+          dashboard: "https://grafana.example.com/d/system-overview"
+
+      # 节点资源告警
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+          service: system
+          component: cpu
+          priority: P1
+        annotations:
+          summary: "CPU使用率过高"
+          description: "{{ $labels.instance }} CPU使用率为 {{ $value | humanizePercentage }}，阈值：80%"
+          dashboard: "https://grafana.example.com/d/node-metrics"
+
+      - alert: HighMemoryUsage
+        expr: |
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+          service: system
+          component: memory
+          priority: P1
+        annotations:
+          summary: "内存使用率过高"
+          description: "{{ $labels.instance }} 内存使用率为 {{ $value | humanizePercentage }}，阈值：85%"
+
+      - alert: HighDiskUsage
+        expr: |
+          (node_filesystem_size_bytes{fstype!~"tmpfs|ramfs"} - node_filesystem_free_bytes{fstype!~"tmpfs|ramfs"}) / node_filesystem_size_bytes{fstype!~"tmpfs|ramfs"} * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+          service: system
+          component: disk
+          priority: P1
+        annotations:
+          summary: "磁盘使用率过高"
+          description: "{{ $labels.instance }} {{ $labels.mountpoint }} 磁盘使用率为 {{ $value | humanizePercentage }}，阈值：90%"
+
+  # 应用级告警
+  - name: application
+    rules:
+      # 搜索成功率监控（P0级）- MON-006
+      - alert: SearchSuccessRateLow
+        expr: |
+          avg(rate(internship_search_success_total[5m])) / avg(rate(internship_search_requests_total[5m])) * 100 < 80
+        for: 5m
+        labels:
+          severity: critical
+          environment: production
+          service: search
+          component: success_rate
+          priority: P0
+        annotations:
+          summary: "搜索成功率低于80%"
+          description: "搜索成功率为 {{ $value | humanizePercentage }}，阈值：80%"
+          runbook_url: "https://wiki.example.com/runbooks/search-failure"
+          dashboard: "https://grafana.example.com/d/search-metrics"
+
+      # 爬虫成功率监控（P1级）- MON-007
+      - alert: CrawlerSuccessRateLow
+        expr: |
+          avg(rate(internship_crawler_success_total{platform=~".*"}[5m])) / avg(rate(internship_crawler_requests_total{platform=~".*"}[5m])) * 100 < 70
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+          service: crawler
+          component: success_rate
+          priority: P1
+        annotations:
+          summary: "爬虫成功率低于70%"
+          description: "{{ $labels.platform }} 爬虫成功率为 {{ $value | humanizePercentage }}，阈值：70%"
+          dashboard: "https://grafana.example.com/d/crawler-metrics"
+
+      # 响应时间P95监控（P1级）- MON-008
+      - alert: HighResponseTimeP95
+        expr: |
+          histogram_quantile(0.95, rate(internship_request_duration_seconds_bucket[5m])) > 15
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+          service: api
+          component: response_time
+          priority: P1
+        annotations:
+          summary: "API响应时间P95超过15秒"
+          description: "{{ $labels.endpoint }} P95响应时间为 {{ $value | humanizeDuration }}，阈值：15秒"
+          dashboard: "https://grafana.example.com/d/api-metrics"
+
+      # 错误率告警
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(internship_request_errors_total[5m])) / sum(rate(internship_request_total[5m]))) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          environment: production
+          service: api
+          component: error_rate
+          priority: P0
+        annotations:
+          summary: "错误率超过5%"
+          description: "错误率为 {{ $value | humanizePercentage }}，阈值：5%"
+
+      # 数据库连接池告警
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          internship_db_connections_active / internship_db_connections_max * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+          service: database
+          component: connection_pool
+          priority: P1
+        annotations:
+          summary: "数据库连接池使用率超过90%"
+          description: "数据库连接池使用率为 {{ $value | humanizePercentage }}，阈值：90%"
+
+  # 业务级告警
+  - name: business
+    rules:
+      # 业务指标告警
+      - alert: LowDailyActiveUsers
+        expr: |
+          internship_daily_active_users < 500
+        for: 1h
+        labels:
+          severity: warning
+          environment: production
+          service: business
+          component: dau
+          priority: P1
+        annotations:
+          summary: "日活跃用户数低于500"
+          description: "日活跃用户数为 {{ $value }}，阈值：500"
+
+      - alert: LowSessionCompletionRate
+        expr: |
+          internship_session_completion_rate < 60
+        for: 1h
+        labels:
+          severity: warning
+          environment: production
+          service: business
+          component: session
+          priority: P1
+        annotations:
+          summary: "会话完成率低于60%"
+          description: "会话完成率为 {{ $value }}%，阈值：60%"
+
+      - alert: HighAPIResponseTime
+        expr: |
+          avg(rate(internship_api_response_time_seconds_sum[5m])) / avg(rate(internship_api_response_time_seconds_count[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+          service: business
+          component: api_performance
+          priority: P1
+        annotations:
+          summary: "API平均响应时间超过5秒"
+          description: "API平均响应时间为 {{ $value }}秒，阈值：5秒"
+
+  # 第三方服务告警
+  - name: third_party
+    rules:
+      # OpenAI API告警
+      - alert: OpenAIServiceError
+        expr: |
+          rate(internship_openai_api_errors_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          environment: production
+          service: openai
+          component: api
+          priority: P0
+        annotations:
+          summary: "OpenAI API服务异常"
+          description: "检测到OpenAI API错误，请检查API密钥和服务状态"
+          runbook_url: "https://wiki.example.com/runbooks/openai-failure"
+
+      # 爬虫平台可访问性告警
+      - alert: CrawlerPlatformUnreachable
+        expr: |
+          avg(rate(internship_crawler_platform_available{platform=~".*"}[5m])) == 0
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+          service: crawler
+          component: platform
+          priority: P1
+        annotations:
+          summary: "爬虫平台不可访问"
+          description: "{{ $labels.platform }} 平台连续5分钟不可访问"
+
+  # 合成监控告警
+  - name: synthetic
+    rules:
+      # 关键业务流程监控
+      - alert: CoreBusinessFlowFailed
+        expr: |
+          probe_success{job="blackbox", probe="core_business_flow"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          environment: production
+          service: synthetic
+          component: business_flow
+          priority: P0
+        annotations:
+          summary: "核心业务流程失败"
+          description: "核心业务流程监控失败，可能影响用户体验"
+          runbook_url: "https://wiki.example.com/runbooks/core-flow-failure"
+
+      # SSL证书过期告警
+      - alert: SSLCertExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry{job="blackbox"} - time() < 86400 * 30  # 30天
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+          service: security
+          component: ssl
+          priority: P1
+        annotations:
+          summary: "SSL证书即将过期"
+          description: "SSL证书将在30天内过期，请及时更新"
+
+# 记录规则（用于优化查询性能）
+groups:
+  - name: recording_rules
+    interval: 30s
+    rules:
+      # 搜索成功率记录规则
+      - record: internship:search_success_rate:5m
+        expr: |
+          avg(rate(internship_search_success_total[5m])) / avg(rate(internship_search_requests_total[5m])) * 100
+
+      # 爬虫成功率记录规则
+      - record: internship:crawler_success_rate:5m
+        expr: |
+          avg(rate(internship_crawler_success_total[5m])) / avg(rate(internship_crawler_requests_total[5m])) * 100
+
+      # API错误率记录规则
+      - record: internship:api_error_rate:5m
+        expr: |
+          (sum(rate(internship_request_errors_total[5m])) / sum(rate(internship_request_total[5m]))) * 100
+
+      # 系统可用性记录规则
+      - record: internship:system_availability:5m
+        expr: |
+          avg(rate(probe_success{job="blackbox"}[5m])) * 100

@@ -1,0 +1,26 @@
+{
+  "id": "51JOB2024006",
+  "title": "UI设计实习生",
+  "company": "网易",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/游戏",
+  "location": "杭州",
+  "job_type": "实习",
+  "salary_min": 4000,
+  "salary_max": 6000,
+  "salary_months": 14,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "网易有道招聘UI设计实习生，负责教育产品的界面设计。",
+  "requirements": [
+    "设计相关专业",
+    "熟练使用Figma、Sketch",
+    "有良好的审美能力",
+    "有设计作品集"
+  ],
+  "skills": ["Figma", "Sketch", "Photoshop", "UI设计", "视觉设计"],
+  "posted_date": "2026-04-08",
+  "source": "51job",
+  "url": "https://www.51job.com/job/xxx",
+  "status": "active"
+}

@@ -1,0 +1,105 @@
+{
+  "description": "技能分类体系 - 用于技能的组织和管理",
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "programming_languages",
+      "name": "编程语言",
+      "name_en": "Programming Languages",
+      "description": "各类编程语言",
+      "count": 20,
+      "parent": null,
+      "order": 1
+    },
+    {
+      "id": "frontend_frameworks",
+      "name": "前端框架/库",
+      "name_en": "Frontend Frameworks",
+      "description": "前端开发框架和UI组件库",
+      "count": 16,
+      "parent": null,
+      "order": 2
+    },
+    {
+      "id": "backend_frameworks",
+      "name": "后端框架",
+      "name_en": "Backend Frameworks",
+      "description": "后端服务框架",
+      "count": 13,
+      "parent": null,
+      "order": 3
+    },
+    {
+      "id": "databases",
+      "name": "数据库",
+      "name_en": "Databases",
+      "description": "关系型和非关系型数据库",
+      "count": 12,
+      "parent": null,
+      "order": 4
+    },
+    {
+      "id": "devops_cloud",
+      "name": "运维与云原生",
+      "name_en": "DevOps & Cloud Native",
+      "description": "运维工具、云服务和容器技术",
+      "count": 16,
+      "parent": null,
+      "order": 5
+    },
+    {
+      "id": "ai_ml",
+      "name": "人工智能与机器学习",
+      "name_en": "AI & Machine Learning",
+      "description": "AI框架、算法和应用",
+      "count": 13,
+      "parent": null,
+      "order": 6
+    },
+    {
+      "id": "data_analytics",
+      "name": "数据分析",
+      "name_en": "Data Analytics",
+      "description": "数据处理和分析工具",
+      "count": 10,
+      "parent": null,
+      "order": 7
+    },
+    {
+      "id": "mobile_dev",
+      "name": "移动开发",
+      "name_en": "Mobile Development",
+      "description": "移动端应用开发技术",
+      "count": 9,
+      "parent": null,
+      "order": 8
+    },
+    {
+      "id": "testing",
+      "name": "测试",
+      "name_en": "Testing",
+      "description": "软件测试方法和工具",
+      "count": 10,
+      "parent": null,
+      "order": 9
+    },
+    {
+      "id": "product_design",
+      "name": "产品与UI/UX",
+      "name_en": "Product & Design",
+      "description": "产品设计和用户体验",
+      "count": 12,
+      "parent": null,
+      "order": 10
+    },
+    {
+      "id": "management",
+      "name": "项目与管理",
+      "name_en": "Management",
+      "description": "项目管理和协作工具",
+      "count": 8,
+      "parent": null,
+      "order": 11
+    }
+  ]
+}

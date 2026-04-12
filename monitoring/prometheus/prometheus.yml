@@ -1,0 +1,152 @@
+# Prometheus configuration for Internship AI Assistant
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    cluster: 'internship-ai'
+
+# Rule files
+rule_files:
+  - 'alerts.yml'
+  - 'recording_rules.yml'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # 节点监控（Node Exporter）
+  - job_name: 'node'
+    static_configs:
+      - targets:
+        - 'node-exporter:9100'
+        - 'app-server-1:9100'
+        - 'app-server-2:9100'
+        - 'db-server:9100'
+        - 'cache-server:9100'
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # 后端应用监控
+  - job_name: 'backend'
+    static_configs:
+      - targets:
+        - 'backend:8000'
+    metrics_path: /metrics
+    scrape_interval: 15s
+    params:
+      format: ['prometheus']
+
+  # Nginx监控
+  - job_name: 'nginx'
+    static_configs:
+      - targets:
+        - 'nginx-exporter:9113'
+    scrape_interval: 30s
+
+  # MySQL监控
+  - job_name: 'mysql'
+    static_configs:
+      - targets:
+        - 'mysqld-exporter:9104'
+    scrape_interval: 30s
+
+  # Redis监控
+  - job_name: 'redis'
+    static_configs:
+      - targets:
+        - 'redis-exporter:9121'
+    scrape_interval: 30s
+
+  # 黑盒监控（外部探测）
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - 'https://internship.example.com'
+        - 'https://internship.example.com/health'
+        - 'https://api.internship.example.com/health'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # 业务指标监控
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets:
+        - 'backend:8000'
+    metrics_path: /api/v1/metrics
+    scrape_interval: 30s
+    params:
+      type: ['business']
+
+  # 爬虫监控
+  - job_name: 'crawler-metrics'
+    static_configs:
+      - targets:
+        - 'backend:8000'
+    metrics_path: /api/v1/metrics/crawler
+    scrape_interval: 30s
+    params:
+      platform: ['zhipin', 'zhilian', 'qiancheng', 'liepin']
+
+# 远程写入配置（可选）
+remote_write:
+  - url: 'https://prometheus-cloud.example.com/api/v1/write'
+    basic_auth:
+      username: '${PROMETHEUS_CLOUD_USER}'
+      password: '${PROMETHEUS_CLOUD_PASSWORD}'
+    write_relabel_configs:
+      - source_labels: [environment]
+        regex: 'production'
+        action: keep
+
+# 远程读取配置（可选）
+remote_read:
+  - url: 'https://prometheus-cloud.example.com/api/v1/read'
+    basic_auth:
+      username: '${PROMETHEUS_CLOUD_USER}'
+      password: '${PROMETHEUS_CLOUD_PASSWORD}'
+    read_recent: true
+
+# 存储配置
+storage:
+  tsdb:
+    path: /prometheus
+    retention:
+      time: 15d
+      size: 50GB
+    wal_compression: true
+    stripe_size: 512MB
+
+# 查询配置
+query:
+  lookback_delta: 5m
+  max_concurrent: 20
+  timeout: 2m
+
+# Web配置
+web:
+  listen-address: '0.0.0.0:9090'
+  page_title: 'Internship AI Monitoring'
+  max_connections: 512
+  read_timeout: 5m
+  enable_lifecycle: true
+  enable_admin_api: true

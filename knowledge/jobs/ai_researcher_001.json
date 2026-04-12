@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240029",
+  "title": "AI研究员实习生",
+  "company": "商汤科技",
+  "company_size": "2000人以上",
+  "company_industry": "AI/计算机视觉",
+  "location": "上海",
+  "job_type": "实习",
+  "salary_min": 12000,
+  "salary_max": 20000,
+  "salary_months": 16,
+  "education": "硕士",
+  "experience": "应届生",
+  "description": "商汤科技AI研究院实习生，参与计算机视觉和深度学习算法研究，发表顶级会议论文。",
+  "requirements": [
+    "计算机、数学、统计学等相关专业硕士",
+    "深度学习理论基础扎实",
+    "熟练使用PyTorch/TensorFlow",
+    "有顶会论文发表经验者优先"
+  ],
+  "skills": ["深度学习", "计算机视觉", "PyTorch", "TensorFlow", "机器学习", "算法研究", "论文写作"],
+  "posted_date": "2026-04-03",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}

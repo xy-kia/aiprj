@@ -1,0 +1,22 @@
+{
+  "id": "test_job_001",
+  "title": "Python开发实习生",
+  "company": "测试科技公司",
+  "location": "北京",
+  "job_type": "实习",
+  "salary_min": 8000,
+  "salary_max": 12000,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "负责Python后端开发，参与项目设计与实现。",
+  "requirements": [
+    "熟悉Python编程",
+    "了解Django或Flask框架",
+    "具备基本的数据结构知识",
+    "良好的团队合作精神"
+  ],
+  "skills": ["Python", "Django", "MySQL", "Git"],
+  "posted_date": "2026-04-11",
+  "source": "test",
+  "url": "https://test.com/job/001"
+}

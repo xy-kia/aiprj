@@ -1,0 +1,74 @@
+{
+  "description": "岗位核心技能映射表 - 定义各岗位所需的核心技能",
+  "version": "1.0.0",
+  "mappings": {
+    "Java开发工程师": {
+      "core_skills": ["Java", "Spring Boot", "Spring Cloud", "MySQL", "Redis", "MyBatis", "Dubbo", "Kafka", "JVM", "Maven"],
+      "optional_skills": ["Elasticsearch", "Docker", "Kubernetes", "RocketMQ", "Netty", "Zookeeper"]
+    },
+    "前端开发工程师": {
+      "core_skills": ["JavaScript", "Vue.js", "React", "HTML5", "CSS3", "TypeScript", "Webpack", "ES6"],
+      "optional_skills": ["Node.js", "Electron", "UniApp", "Vite", "Tailwind CSS", "Ant Design"]
+    },
+    "Python开发工程师": {
+      "core_skills": ["Python", "Django", "Flask", "FastAPI", "MySQL", "Redis", "Celery", "SQLAlchemy"],
+      "optional_skills": ["Scrapy", "Pandas", "NumPy", "Airflow", "Tornado", "Pytest"]
+    },
+    "产品经理": {
+      "core_skills": ["需求分析", "原型设计", "PRD文档", "Axure", "Figma", "数据分析", "用户研究"],
+      "optional_skills": ["SQL", "A/B测试", "项目管理", "Visio", "MindManager", "Tableau"]
+    },
+    "数据分析师": {
+      "core_skills": ["SQL", "Python", "Excel", "BI工具", "统计学", "数据可视化", "A/B测试"],
+      "optional_skills": ["R语言", "Tableau", "PowerBI", "机器学习", "Hadoop", "Spark"]
+    },
+    "UI设计师": {
+      "core_skills": ["Photoshop", "Illustrator", "Figma", "Sketch", "视觉设计", "色彩理论", "排版设计"],
+      "optional_skills": ["After Effects", "C4D", "Principle", "动效设计", "品牌设计", "插画"]
+    },
+    "UX设计师": {
+      "core_skills": ["交互设计", "用户研究", "原型设计", "Figma", "Axure", "可用性测试", "信息架构"],
+      "optional_skills": ["服务设计", "设计系统", "心理学", "数据分析", "Miro", "Notion"]
+    },
+    "算法工程师": {
+      "core_skills": ["Python", "机器学习", "深度学习", "TensorFlow", "PyTorch", "数学建模", "数据结构与算法"],
+      "optional_skills": ["C++", "CUDA", "推荐系统", "NLP", "计算机视觉", "强化学习"]
+    },
+    "测试工程师": {
+      "core_skills": ["功能测试", "接口测试", "自动化测试", "Python", "Selenium", "JMeter", "Postman"],
+      "optional_skills": ["性能测试", "安全测试", "Appium", "Pytest", "Docker", "CI/CD"]
+    },
+    "运维工程师": {
+      "core_skills": ["Linux", "Docker", "Kubernetes", "Jenkins", "Nginx", "Shell", "Git", "Prometheus"],
+      "optional_skills": ["Ansible", "Terraform", "ELK", "Zabbix", "Python", "Go"]
+    },
+    "Go开发工程师": {
+      "core_skills": ["Go", "Gin", "GORM", "MySQL", "Redis", "gRPC", "微服务", "Docker"],
+      "optional_skills": ["Kubernetes", "Etcd", "Kafka", "MongoDB", "Prometheus", "Go-Micro"]
+    },
+    "安卓开发工程师": {
+      "core_skills": ["Android", "Kotlin", "Java", "Jetpack", "MVVM", "Retrofit", "Room"],
+      "optional_skills": ["Flutter", "Jetpack Compose", "NDK", "RxJava", "组件化", "性能优化"]
+    },
+    "iOS开发工程师": {
+      "core_skills": ["Swift", "Objective-C", "iOS", "UIKit", "SwiftUI", "CocoaPods", "MVVM"],
+      "optional_skills": ["Flutter", "RxSwift", "Core Data", "Combine", "Runtime", "性能优化"]
+    },
+    "运营专员": {
+      "core_skills": ["内容运营", "数据分析", "用户增长", "活动策划", "文案撰写", "社群运营"],
+      "optional_skills": ["SEO", "ASO", "新媒体运营", "短视频运营", "直播运营", "电商运营"]
+    },
+    "人力资源": {
+      "core_skills": ["招聘", "面试技巧", "员工关系", "绩效管理", "Excel", "沟通能力"],
+      "optional_skills": ["薪酬设计", "培训开发", "HRBP", "劳动法规", "人才盘点", "OKR"]
+    },
+    "市场营销": {
+      "core_skills": ["市场调研", "品牌推广", "营销策划", "数据分析", "PPT", "文案撰写"],
+      "optional_skills": ["数字营销", "社交媒体营销", "SEM", "SEO", "内容营销", "增长黑客"]
+    },
+    "财务分析师": {
+      "core_skills": ["财务分析", "Excel", "财务报表", "预算管理", "会计", "数据分析"],
+      "optional_skills": ["SQL", "PowerBI", "Python", "成本管理", "税务筹划", "审计"]
+    }
+  }
+}

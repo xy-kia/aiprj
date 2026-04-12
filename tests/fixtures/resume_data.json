@@ -1,0 +1,34 @@
+{
+  "id": "test_resume_001",
+  "name": "张三",
+  "education": "本科",
+  "school": "测试大学",
+  "major": "计算机科学与技术",
+  "graduation_year": "2026",
+  "skills": ["Python", "Django", "MySQL", "Git", "Linux"],
+  "projects": [
+    {
+      "name": "电商网站开发",
+      "role": "后端开发",
+      "description": "使用Django框架开发电商网站后端API",
+      "technologies": ["Python", "Django", "MySQL", "Redis"],
+      "duration": "3个月"
+    }
+  ],
+  "work_experience": [
+    {
+      "company": "实习公司",
+      "position": "软件开发实习生",
+      "duration": "2025.07-2025.10",
+      "description": "参与内部工具开发，使用Python进行数据清洗"
+    }
+  ],
+  "certifications": ["Python编程认证"],
+  "self_introduction": "热爱编程，熟悉Python后端开发，具备良好的团队协作能力。",
+  "job_intent": {
+    "job_types": ["实习"],
+    "locations": ["北京", "上海"],
+    "salary_expectation": 10000,
+    "industries": ["互联网", "软件"]
+  }
+}

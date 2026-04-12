@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240010",
+  "title": "UX设计实习生",
+  "company": "携程",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/旅游",
+  "location": "上海",
+  "job_type": "实习",
+  "salary_min": 4000,
+  "salary_max": 6000,
+  "salary_months": 14,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "携程机票事业部招聘UX设计实习生，参与机票预订流程体验优化。",
+  "requirements": [
+    "设计、心理学或相关专业",
+    "熟悉用户体验设计方法",
+    "熟练使用Figma、Axure",
+    "有用户研究经验优先"
+  ],
+  "skills": ["UX设计", "交互设计", "Figma", "Axure", "用户研究"],
+  "posted_date": "2026-04-07",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}

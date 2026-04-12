@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240007",
+  "title": "算法工程师实习生",
+  "company": "百度",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/AI",
+  "location": "北京",
+  "job_type": "实习",
+  "salary_min": 8000,
+  "salary_max": 12000,
+  "salary_months": 16,
+  "education": "硕士",
+  "experience": "应届生",
+  "description": "百度AI研究院招聘算法实习生，参与大语言模型和推荐算法研究。",
+  "requirements": [
+    "计算机、数学、统计学等相关专业硕士",
+    "熟悉机器学习和深度学习",
+    "熟练使用PyTorch或TensorFlow",
+    "有顶会论文优先"
+  ],
+  "skills": ["Python", "机器学习", "深度学习", "PyTorch", "TensorFlow"],
+  "posted_date": "2026-04-09",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240028",
+  "title": "测试开发实习生",
+  "company": "网易",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/游戏",
+  "location": "杭州",
+  "job_type": "实习",
+  "salary_min": 8000,
+  "salary_max": 14000,
+  "salary_months": 14,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "网易游戏测试开发实习生，参与游戏质量保障体系构建，负责自动化测试框架开发。",
+  "requirements": [
+    "计算机或相关专业本科",
+    "熟悉软件测试理论和方法",
+    "掌握Python/Java等编程语言",
+    "有自动化测试经验者优先"
+  ],
+  "skills": ["软件测试", "自动化测试", "Python", "Selenium", "JUnit", "测试框架", "游戏测试"],
+  "posted_date": "2026-04-04",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}

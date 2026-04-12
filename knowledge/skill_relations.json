@@ -1,0 +1,130 @@
+{
+  "description": "技能关联关系库 - 定义技能之间的相关性",
+  "version": "1.0.0",
+  "relations": {
+    "Python": {
+      "strong": ["机器学习", "数据分析", "深度学习", "Django", "Flask", "FastAPI", "爬虫", "TensorFlow", "PyTorch"],
+      "weak": ["人工智能", "NLP", "计算机视觉", "Pandas", "NumPy", "Go"]
+    },
+    "Java": {
+      "strong": ["Spring Boot", "Spring Cloud", "MyBatis", "MySQL", "Redis", "微服务", "高并发"],
+      "weak": ["Spring", "Dubbo", "Zookeeper", "Kafka", "Maven", "Gradle"]
+    },
+    "JavaScript": {
+      "strong": ["Vue.js", "React", "Node.js", "TypeScript", "HTML5", "CSS3", "前端开发"],
+      "weak": ["jQuery", "Angular", "Webpack", "Electron", "UniApp"]
+    },
+    "TypeScript": {
+      "strong": ["JavaScript", "Vue.js", "React", "Node.js", "Angular"],
+      "weak": ["前端开发", "NestJS", "Denoly"]
+    },
+    "Go": {
+      "strong": ["微服务", "Docker", "Kubernetes", "高并发", "分布式", "云原生", "gRPC"],
+      "weak": ["Etcd", "Prometheus", "Go-Micro", "gin"]
+    },
+    "Vue.js": {
+      "strong": ["JavaScript", "HTML5", "CSS3", "Element Plus", "前端开发", "TypeScript"],
+      "weak": ["Vite", "Vuex", "Pinia", "Nuxt.js", "UniApp"]
+    },
+    "React": {
+      "strong": ["JavaScript", "TypeScript", "前端开发", "Redux", "Next.js"],
+      "weak": ["React Native", "Ant Design", "Umi", "Dva"]
+    },
+    "Spring Boot": {
+      "strong": ["Java", "Spring Cloud", "MyBatis", "MySQL", "Redis", "微服务"],
+      "weak": ["Spring", "Spring MVC", "Maven", "Gradle", "JUnit"]
+    },
+    "Spring Cloud": {
+      "strong": ["Java", "Spring Boot", "微服务", "分布式", "Nacos", "Gateway"],
+      "weak": ["Dubbo", "Zookeeper", "Consul", "Eureka"]
+    },
+    "MySQL": {
+      "strong": ["SQL", "Java", "Python", "数据库设计", "Redis", "后端开发"],
+      "weak": ["MyBatis", "JPA", "Hibernate", "分库分表", "主从复制"]
+    },
+    "Redis": {
+      "strong": ["缓存", "高并发", "分布式", "MySQL", "NoSQL", "后端开发"],
+      "weak": ["Memcached", "MongoDB", "Elasticsearch", "消息队列"]
+    },
+    "Docker": {
+      "strong": ["Kubernetes", "DevOps", "CI/CD", "微服务", "云原生", "Linux"],
+      "weak": ["容器化", "Docker Compose", "Harbor", "镜像仓库"]
+    },
+    "Kubernetes": {
+      "strong": ["Docker", "云原生", "微服务", "DevOps", "分布式", "容器编排"],
+      "weak": ["Helm", "Istio", "Prometheus", "Grafana", "etcd"]
+    },
+    "机器学习": {
+      "strong": ["Python", "深度学习", "数据分析", "TensorFlow", "PyTorch", "算法"],
+      "weak": ["NLP", "计算机视觉", "推荐系统", "特征工程", "模型部署"]
+    },
+    "深度学习": {
+      "strong": ["机器学习", "Python", "TensorFlow", "PyTorch", "神经网络", "算法"],
+      "weak": ["CNN", "RNN", "Transformer", "计算机视觉", "NLP"]
+    },
+    "TensorFlow": {
+      "strong": ["机器学习", "深度学习", "Python", "神经网络", "Keras"],
+      "weak": ["模型部署", "TensorFlow Serving", "TFLite"]
+    },
+    "PyTorch": {
+      "strong": ["深度学习", "机器学习", "Python", "神经网络", "Transformer"],
+      "weak": ["TorchServe", "ONNX", "模型压缩"]
+    },
+    "SQL": {
+      "strong": ["MySQL", "PostgreSQL", "数据分析", "数据库", "数据仓库"],
+      "weak": ["Hive", "Spark SQL", "ClickHouse", "SQL优化"]
+    },
+    "数据分析": {
+      "strong": ["SQL", "Python", "Excel", "数据可视化", "统计学", "Pandas"],
+      "weak": ["Tableau", "PowerBI", "A/B测试", "数据挖掘"]
+    },
+    "前端开发": {
+      "strong": ["JavaScript", "Vue.js", "React", "HTML5", "CSS3", "TypeScript"],
+      "weak": ["前端工程化", "Webpack", "Vite", "浏览器原理"]
+    },
+    "微服务": {
+      "strong": ["分布式", "Docker", "Kubernetes", "Spring Cloud", "云原生", "高并发"],
+      "weak": ["服务治理", "服务发现", "熔断降级", "API网关"]
+    },
+    "分布式": {
+      "strong": ["微服务", "高并发", "Redis", "消息队列", "一致性算法"],
+      "weak": ["CAP理论", "分布式事务", "分布式锁", "分库分表"]
+    },
+    "高并发": {
+      "strong": ["分布式", "微服务", "Redis", "消息队列", "负载均衡", "缓存"],
+      "weak": ["限流降级", "性能优化", "系统优化", "压力测试"]
+    },
+    "Android": {
+      "strong": ["Kotlin", "Java", "Jetpack", "MVVM", "移动端开发"],
+      "weak": ["Flutter", "React Native", "组件化", "性能优化"]
+    },
+    "iOS": {
+      "strong": ["Swift", "Objective-C", "UIKit", "移动端开发"],
+      "weak": ["SwiftUI", "Flutter", "React Native", "CocoaPods"]
+    },
+    "Figma": {
+      "strong": ["UI设计", "UX设计", "原型设计", "交互设计", "协作设计"],
+      "weak": ["设计系统", "组件库", "Auto Layout"]
+    },
+    "UI设计": {
+      "strong": ["Figma", "Sketch", "Photoshop", "Illustrator", "视觉设计"],
+      "weak": ["设计规范", "设计系统", "图标设计", "插画"]
+    },
+    "自动化测试": {
+      "strong": ["测试开发", "Selenium", "接口测试", "Pytest", "持续集成"],
+      "weak": ["Appium", "JMeter", "Robot Framework"]
+    },
+    "DevOps": {
+      "strong": ["CI/CD", "Docker", "Kubernetes", "Jenkins", "Linux", "云原生"],
+      "weak": ["Ansible", "Terraform", "GitOps", "SRE"]
+    },
+    "产品经理": {
+      "strong": ["需求分析", "原型设计", "数据分析", "用户研究", "PRD"],
+      "weak": ["项目管理", "Axure", "Figma", "SQL"]
+    },
+    "项目管理": {
+      "strong": ["敏捷开发", "Scrum", "Jira", "团队协作", "沟通"],
+      "weak": ["Confluence", "禅道", "风险管理", "时间管理"]
+    }
+  }
+}

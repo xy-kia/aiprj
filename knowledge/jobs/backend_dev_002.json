@@ -1,0 +1,26 @@
+{
+  "id": "BOSS20240020",
+  "title": "后端开发实习生",
+  "company": "腾讯",
+  "company_size": "2000人以上",
+  "company_industry": "互联网/社交",
+  "location": "深圳",
+  "job_type": "实习",
+  "salary_min": 9000,
+  "salary_max": 15000,
+  "salary_months": 14,
+  "education": "本科",
+  "experience": "应届生",
+  "description": "腾讯云后端开发实习生，参与微服务架构设计和开发，负责高并发系统优化。",
+  "requirements": [
+    "计算机相关专业本科及以上学历",
+    "熟悉Go/Java/Python至少一门语言",
+    "了解MySQL/Redis等数据库",
+    "有分布式系统项目经验者优先"
+  ],
+  "skills": ["Go", "Java", "Python", "MySQL", "Redis", "Docker", "Kubernetes", "微服务"],
+  "posted_date": "2026-04-10",
+  "source": "boss",
+  "url": "https://www.zhipin.com/job_detail/xxx",
+  "status": "active"
+}
