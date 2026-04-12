@@ -124,8 +124,8 @@ async def search_jobs(
                 use_proxy=False,
                 headless=True,
                 user_config=user_config  # 传递用户配置给爬虫
-            ),
-            TestCrawler(user_config=user_config)  # 测试爬虫也传递配置
+            )
+            # TestCrawler(user_config=user_config)  # 测试爬虫也传递配置
             # 可添加其他爬虫：ZhaopinCrawler(), QianchengCrawler()
         ]
         print(f"[DEBUG] 创建了 {len(crawlers)} 个爬虫: {[c.platform for c in crawlers]}", file=sys.stderr)
@@ -172,15 +172,15 @@ async def search_jobs(
         if all_filters:
             jobs = scheduler.filter_jobs(jobs, all_filters)
 
-        # 如果没有任何岗位，使用TestCrawler作为后备
-        if not jobs:
-            print(f"[DEBUG] 没有获取到岗位，使用TestCrawler后备方案", file=sys.stderr)
-            test_crawler = TestCrawler()
-            # TestCrawler的search_jobs是同步生成器，需要转换为列表
-            test_jobs = list(test_crawler.search_jobs(search_keyword, city, page=1))
-            print(f"[DEBUG] TestCrawler获取到 {len(test_jobs)} 个岗位", file=sys.stderr)
-            if test_jobs:
-                jobs = test_jobs
+        # 如果没有任何岗位，使用TestCrawler作为后备（已禁用）
+        # if not jobs:
+        #     print(f"[DEBUG] 没有获取到岗位，使用TestCrawler后备方案", file=sys.stderr)
+        #     test_crawler = TestCrawler()
+        #     # TestCrawler的search_jobs是同步生成器，需要转换为列表
+        #     test_jobs = list(test_crawler.search_jobs(search_keyword, city, page=1))
+        #     print(f"[DEBUG] TestCrawler获取到 {len(test_jobs)} 个岗位", file=sys.stderr)
+        #     if test_jobs:
+        #         jobs = test_jobs
 
         # 转换为字典列表，匹配前端接口
         jobs_data = []

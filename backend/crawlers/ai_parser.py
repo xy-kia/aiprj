@@ -388,6 +388,13 @@ class AIParser:
         Returns:
             岗位数据列表
         """
+        self.logger.info(f"开始AI解析列表页，平台: {repr(platform)}")
+
+        # 检查platform参数类型
+        if not isinstance(platform, str):
+            self.logger.warning(f"platform参数不是字符串类型: {type(platform)}，值: {repr(platform)}，使用默认值 'unknown'")
+            platform = "unknown"
+
         # 检查API密钥是否有效
         if not self.api_key or self.api_key.strip() == "":
             self.logger.warning("AI解析器API密钥为空，跳过AI解析")
@@ -403,7 +410,16 @@ class AIParser:
             else:
                 template_key = "generic_job_page"
 
-            prompt = self.prompt_templates[template_key].format(html_summary=html_summary)
+            self.logger.info(f"选择的模板键: {repr(template_key)}")
+            self.logger.info(f"可用的模板键: {list(self.prompt_templates.keys())}")
+
+            # 防御性检查：确保模板键存在
+            if template_key not in self.prompt_templates:
+                self.logger.error(f"模板键 {repr(template_key)} 不存在，使用默认模板 'generic_job_page'")
+                template_key = "generic_job_page"
+
+            # 使用 str.replace 而不是 .format()，避免 html_summary 中的花括号被误解析为格式字段
+            prompt = self.prompt_templates[template_key].replace("{html_summary}", html_summary)
 
             self.logger.info(f"使用AI解析 {platform} 列表页，HTML摘要长度: {len(html_summary)}")
 
@@ -422,6 +438,7 @@ class AIParser:
 
             # 解析响应
             content = response.choices[0].message.content
+            self.logger.debug(f"AI解析响应原始内容 (前500字符): {repr(content[:500])}")
             data = json.loads(content)
 
             # 处理响应格式
@@ -443,6 +460,10 @@ class AIParser:
 
         except json.JSONDecodeError as e:
             self.logger.error(f"AI响应JSON解析失败: {e}")
+            self.logger.error(f"AI响应原始内容: {repr(content)}")
+            content = content.strip()
+            data = None  # 初始化data变量，防止NameError
+
             # 尝试从响应中提取JSON
             json_match = re.search(r'\[\s*\{.*\}\s*\]', content, re.DOTALL)
             if json_match:
@@ -454,7 +475,80 @@ class AIParser:
                 except:
                     pass
 
-            self.logger.error(f"AI响应内容: {content[:500]}...")
+            # 尝试修复常见的JSON格式错误
+            # 情况1: 如果内容看起来像是单个字符串（用引号包围）
+            content_stripped = content
+            if (content_stripped.startswith('"') and content_stripped.endswith('"')) or \
+               (content_stripped.startswith("'") and content_stripped.endswith("'")):
+                try:
+                    # 可能是AI只返回了一个字符串，尝试解析为字符串然后包装
+                    unquoted = content_stripped[1:-1]
+                    self.logger.info(f"去除引号后内容: {repr(unquoted)}")
+                    if not unquoted:
+                        # 空字符串，创建空对象
+                        data = {}
+                        self.logger.info(f"空字符串响应，创建空对象")
+                        return [data]
+                    # 检查是否可能是字段名而非字段值
+                    known_fields = ["title", "company", "location", "salary_text", "experience", "education",
+                                  "description", "requirements", "skills", "company_size", "id", "url"]
+                    if unquoted in known_fields:
+                        # 可能是AI只返回了字段名，创建该字段名为空值的对象
+                        data = {unquoted: ""}
+                        self.logger.info(f"将字段名响应修复为对象: {data}")
+                        return [data]
+                    else:
+                        # 否则将其视为title字段的值
+                        data = {"title": unquoted}
+                        self.logger.info(f"修复字符串响应为对象: {data}")
+                        return [data]
+                except Exception as inner_e:
+                    self.logger.error(f"修复字符串响应时出错: {inner_e}")
+                    pass
+
+            # 情况2: 如果是部分JSON对象（缺少括号）
+            if content_stripped.startswith('{') and not content_stripped.endswith('}'):
+                # 尝试添加缺失的右括号
+                try:
+                    fixed = content_stripped + '}'
+                    data = json.loads(fixed)
+                    if isinstance(data, dict):
+                        self.logger.info(f"修复缺失括号的JSON对象")
+                        return [data]
+                except:
+                    pass
+            elif content_stripped.startswith('[') and not content_stripped.endswith(']'):
+                # 尝试添加缺失的右括号
+                try:
+                    fixed = content_stripped + ']'
+                    data = json.loads(fixed)
+                    if isinstance(data, list):
+                        self.logger.info(f"修复缺失括号的JSON数组")
+                        return data
+                except:
+                    pass
+
+            # 情况3: 如果内容是非空字符串，但不像是JSON，则将其视为标题或字段名
+            if content_stripped and not content_stripped.startswith('[') and not content_stripped.startswith('{') and not content_stripped.startswith('"') and not content_stripped.startswith("'"):
+                try:
+                    # 检查是否可能是字段名
+                    known_fields = ["title", "company", "location", "salary_text", "experience", "education",
+                                  "description", "requirements", "skills", "company_size", "id", "url"]
+                    if content_stripped in known_fields:
+                        # 可能是AI只返回了字段名，创建该字段名为空值的对象
+                        data = {content_stripped: ""}
+                        self.logger.info(f"将字段名响应修复为对象: {data}")
+                        return [data]
+                    else:
+                        # 否则将其视为title字段的值
+                        data = {"title": content_stripped}
+                        self.logger.info(f"将非JSON响应转换为对象: {data}")
+                        return [data]
+                except Exception as inner_e:
+                    self.logger.error(f"处理非JSON响应时出错: {inner_e}")
+                    pass
+
+            self.logger.error(f"AI响应内容无法解析: {content[:500]}...")
             return []
 
         except APITimeoutError as e:
@@ -471,6 +565,8 @@ class AIParser:
             return []
         except Exception as e:
             self.logger.error(f"AI解析失败: {e}")
+            import traceback
+            self.logger.error(f"异常堆栈: {traceback.format_exc()}")
             return []
 
     def parse_detail_page(self, html: str, platform: str = "BOSS直聘") -> Dict[str, Any]:
@@ -484,6 +580,13 @@ class AIParser:
         Returns:
             岗位详细数据
         """
+        self.logger.info(f"开始AI解析详情页，平台: {repr(platform)}")
+
+        # 检查platform参数类型
+        if not isinstance(platform, str):
+            self.logger.warning(f"platform参数不是字符串类型: {type(platform)}，值: {repr(platform)}，使用默认值 'unknown'")
+            platform = "unknown"
+
         # 检查API密钥是否有效
         if not self.api_key or self.api_key.strip() == "":
             self.logger.warning("AI解析器API密钥为空，跳过AI解析")
@@ -497,7 +600,16 @@ class AIParser:
             else:
                 template_key = "generic_job_page"
 
-            prompt = self.prompt_templates[template_key].format(html_summary=html_summary)
+            self.logger.info(f"详情页选择的模板键: {repr(template_key)}")
+            self.logger.info(f"详情页可用的模板键: {list(self.prompt_templates.keys())}")
+
+            # 防御性检查：确保模板键存在
+            if template_key not in self.prompt_templates:
+                self.logger.error(f"详情页模板键 {repr(template_key)} 不存在，使用默认模板 'generic_job_page'")
+                template_key = "generic_job_page"
+
+            # 使用 str.replace 而不是 .format()，避免 html_summary 中的花括号被误解析为格式字段
+            prompt = self.prompt_templates[template_key].replace("{html_summary}", html_summary)
 
             self.logger.info(f"使用AI解析 {platform} 详情页，HTML摘要长度: {len(html_summary)}")
 
@@ -514,11 +626,83 @@ class AIParser:
             )
 
             content = response.choices[0].message.content
-            data = json.loads(content)
+            # 尝试解析JSON，如果失败则尝试修复
+            data = None
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError as e:
+                self.logger.error(f"AI响应JSON解析失败: {e}")
+                self.logger.error(f"AI响应原始内容: {repr(content)}")
+                original_content = content
+                content = content.strip()
+                self.logger.info(f"去除空白字符后内容: {repr(content)}")
+                data = None  # 初始化data变量，防止NameError
 
+                # 尝试修复常见的JSON格式错误
+                # 情况1: 如果内容看起来像是单个字符串（用引号包围）
+                if (content.startswith('"') and content.endswith('"')) or \
+                   (content.startswith("'") and content.endswith("'")):
+                    try:
+                        unquoted = content[1:-1]
+                        self.logger.info(f"去除引号后内容: {repr(unquoted)}")
+                        if not unquoted:
+                            # 空字符串，创建空对象
+                            data = {}
+                            self.logger.info(f"空字符串响应，创建空对象")
+                        else:
+                            # 检查是否可能是字段名而非字段值
+                            known_fields = ["title", "company", "location", "salary_text", "experience", "education",
+                                          "description", "requirements", "skills", "company_size", "id", "url"]
+                            if unquoted in known_fields:
+                                # 可能是AI只返回了字段名，创建该字段名为空值的对象
+                                data = {unquoted: ""}
+                                self.logger.info(f"将字段名响应修复为对象: {data}")
+                            else:
+                                # 否则将其视为title字段的值
+                                data = {"title": unquoted}
+                                self.logger.info(f"修复字符串响应为对象: {data}")
+                    except Exception as inner_e:
+                        self.logger.error(f"修复字符串响应时出错: {inner_e}")
+                        pass
+
+                # 情况2: 如果是部分JSON对象（缺少括号）
+                if data is None and content.startswith('{') and not content.endswith('}'):
+                    try:
+                        fixed = content + '}'
+                        data = json.loads(fixed)
+                        self.logger.info(f"修复缺失括号的JSON对象")
+                    except:
+                        pass
+
+                # 情况3: 如果内容是非空字符串，但不像是JSON，则将其视为标题或字段名
+                if data is None and content and not content.startswith('[') and not content.startswith('{') and not content.startswith('"') and not content.startswith("'"):
+                    try:
+                        # 检查是否可能是字段名
+                        known_fields = ["title", "company", "location", "salary_text", "experience", "education",
+                                      "description", "requirements", "skills", "company_size", "id", "url"]
+                        if content in known_fields:
+                            # 可能是AI只返回了字段名，创建该字段名为空值的对象
+                            data = {content: ""}
+                            self.logger.info(f"将字段名响应修复为对象: {data}")
+                        else:
+                            # 否则将其视为title字段的值
+                            data = {"title": content}
+                            self.logger.info(f"将非JSON响应转换为对象: {data}")
+                    except Exception as inner_e:
+                        self.logger.error(f"处理非JSON响应时出错: {inner_e}")
+                        pass
+
+                if data is None:
+                    self.logger.error(f"AI响应内容无法解析: {content[:500]}...")
+                    return {}
+
+            # 处理响应格式：期望字典，但如果返回数组则取第一个元素
             if isinstance(data, dict):
                 self.logger.info(f"AI解析详情页成功")
                 return data
+            elif isinstance(data, list) and data:
+                self.logger.info(f"AI返回数组，取第一个元素")
+                return data[0] if isinstance(data[0], dict) else {"title": str(data[0])}
             else:
                 self.logger.warning(f"AI响应不是字典类型: {type(data)}")
                 return {}
@@ -537,6 +721,8 @@ class AIParser:
             return {}
         except Exception as e:
             self.logger.error(f"AI解析详情页失败: {e}")
+            import traceback
+            self.logger.error(f"异常堆栈: {traceback.format_exc()}")
             return {}
 
     def extract_jobs_from_html(self, html: str, platform: str = "unknown") -> List[Dict[str, Any]]:

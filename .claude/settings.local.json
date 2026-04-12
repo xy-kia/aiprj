@@ -6,7 +6,8 @@
       "Bash(python -m pytest tests/ --tb=short -q)",
       "Bash(sqlite3 \"d:\\\\TEST\\\\aiprj\\\\internship_db.sqlite\" \".tables\")",
       "Bash(sqlite3 \"d:\\\\TEST\\\\aiprj\\\\internship_db.sqlite\" \"SELECT id, username, email, is_active FROM users;\")",
-      "Bash(python -c \"import playwright; print\\('playwright installed'\\)\")"
+      "Bash(python -c \"import playwright; print\\('playwright installed'\\)\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, 'backend'\\); from crawlers.ai_parser import AIParser; print\\('导入成功'\\)\")"
     ]
   }
 }

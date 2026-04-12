@@ -14,16 +14,17 @@ from typing import Dict, List, Any, Optional, Generator
 from urllib.parse import urlencode
 
 from .base import PlaywrightCrawler, JobItem
+from .ai_parser import AIParser
 
 
 class LiepinCrawler(PlaywrightCrawler):
     """猎聘爬虫"""
 
-    platform = "猎聘"
     base_url = "https://www.liepin.com"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.platform = "猎聘"
         self.search_url = f"{self.base_url}/zhaopin"
 
         # 猎聘反爬策略较强，增加延迟
@@ -51,6 +52,25 @@ class LiepinCrawler(PlaywrightCrawler):
             "武汉": "170020",
             "南京": "060020",
         }
+
+        # AI解析器（作为备用解析方案）
+        self.ai_parser_enabled = kwargs.get("ai_parser_enabled", True)
+        self.user_config = kwargs.get("user_config")  # 用户AI配置
+        self.ai_parser = None
+        if self.ai_parser_enabled:
+            try:
+                # 如果有用户配置，传递给AI解析器
+                if self.user_config:
+                    enabled = getattr(self.user_config, 'enabled', False)
+                    self.logger.info(f"用户配置存在，启用状态: {enabled}")
+                    self.ai_parser = AIParser(user_config=self.user_config)
+                    self.logger.info("AI解析器初始化成功（使用用户配置）")
+                else:
+                    self.logger.info("未提供用户配置，使用系统默认配置")
+                    self.ai_parser = AIParser()
+                    self.logger.info("AI解析器初始化成功（使用系统配置）")
+            except Exception as e:
+                self.logger.warning(f"AI解析器初始化失败，将仅使用传统解析: {e}")
 
     def search_jobs(
         self,
@@ -248,10 +268,47 @@ class LiepinCrawler(PlaywrightCrawler):
         except Exception as e:
             self.logger.error(f"解析列表页失败: {e}")
 
+        # 如果传统解析方法都没有找到数据，尝试AI解析
+        if not jobs and self.ai_parser and self.ai_parser_enabled:
+            try:
+                self.logger.info("传统解析方法失败，尝试使用AI解析")
+                ai_jobs = self.ai_parser.parse_list_page(html, self.platform)
+
+                if ai_jobs:
+                    self.logger.info(f"AI解析成功，找到 {len(ai_jobs)} 个岗位")
+
+                    # 将AI解析的数据转换为标准格式
+                    for ai_job_data in ai_jobs:
+                        try:
+                            # 确保数据有必要的字段
+                            if not isinstance(ai_job_data, dict):
+                                continue
+
+                            # 如果AI解析缺少必要字段，尝试补充
+                            if "id" not in ai_job_data:
+                                ai_job_data["id"] = ""
+                            if "url" not in ai_job_data:
+                                ai_job_data["url"] = ""
+                            if "skills" not in ai_job_data:
+                                ai_job_data["skills"] = []
+
+                            jobs.append(ai_job_data)
+                        except Exception as e:
+                            self.logger.warning(f"处理AI解析数据失败: {e}")
+                            continue
+                else:
+                    self.logger.info("AI解析也未找到岗位数据")
+            except Exception as e:
+                self.logger.error(f"AI解析失败: {e}")
+
         return jobs
 
     def _parse_job_from_json(self, item: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """从JSON数据解析岗位"""
+        # 检查item类型
+        if not isinstance(item, dict):
+            self.logger.warning(f"JSON岗位数据不是字典类型: {type(item)}，值: {item}")
+            return None
         try:
             job_id = item.get("jobId") or item.get("encryptId", "")
             title = item.get("jobName") or item.get("title", "")
@@ -267,7 +324,7 @@ class LiepinCrawler(PlaywrightCrawler):
                 url = f"{self.base_url}/job/{job_id}.html"
 
             job_data = {
-                "id": f"liepin_{job_id}" if job_id else f"liepin_{hash(str(item))[:16]}",
+                "id": f"liepin_{job_id}" if job_id else f"liepin_{str(abs(hash(str(item))))[:16]}",
                 "title": title,
                 "company": company,
                 "location": city,
@@ -286,6 +343,11 @@ class LiepinCrawler(PlaywrightCrawler):
     def _parse_job_from_html(self, element) -> Optional[Dict[str, Any]]:
         """从HTML元素解析岗位"""
         try:
+            self.logger.debug(f"解析HTML元素，类型: {type(element)}，内容摘要: {str(element)[:200]}")
+            # 检查element是否为可用的Tag对象
+            if not hasattr(element, 'find'):
+                self.logger.warning(f"HTML元素不支持find方法，类型: {type(element)}")
+                return None
             # 提取岗位信息
             title_elem = element.find('a', class_=re.compile(r'job-title|title'))
             company_elem = element.find('a', class_=re.compile(r'company-name|company'))
@@ -310,7 +372,7 @@ class LiepinCrawler(PlaywrightCrawler):
                     job_id = match.group(1)
 
             job_data = {
-                "id": f"liepin_{job_id}" if job_id else f"liepin_{hash(str(element))[:16]}",
+                "id": f"liepin_{job_id}" if job_id else f"liepin_{str(abs(hash(str(element))))[:16]}",
                 "title": title_elem.text.strip() if title_elem else "",
                 "company": company_elem.text.strip() if company_elem else "",
                 "salary_text": salary_elem.text.strip() if salary_elem else "",
@@ -323,7 +385,9 @@ class LiepinCrawler(PlaywrightCrawler):
             return job_data
 
         except Exception as e:
+            import traceback
             self.logger.warning(f"解析HTML岗位数据失败: {e}")
+            self.logger.warning(f"异常堆栈: {traceback.format_exc()}")
             return None
 
     def _create_job_item(self, job_data: Dict[str, Any]) -> JobItem:
@@ -467,6 +531,21 @@ class LiepinCrawler(PlaywrightCrawler):
 
         except Exception as e:
             self.logger.error(f"解析详情页失败: {e}")
+
+        # 如果传统解析方法都没有找到有效数据，尝试AI解析
+        if not job_data.get("title") and not job_data.get("company") and self.ai_parser and self.ai_parser_enabled:
+            try:
+                self.logger.info("详情页传统解析方法失败，尝试使用AI解析")
+                ai_job_data = self.ai_parser.parse_detail_page(html, self.platform)
+
+                if ai_job_data:
+                    self.logger.info("AI解析详情页成功")
+                    # 合并AI解析的数据（优先使用AI数据）
+                    for key, value in ai_job_data.items():
+                        if value:  # 只覆盖非空值
+                            job_data[key] = value
+            except Exception as e:
+                self.logger.error(f"详情页AI解析失败: {e}")
 
         return job_data
 
