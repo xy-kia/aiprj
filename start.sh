@@ -93,13 +93,6 @@ else
     echo "[DONE] 前端依赖已找到"
 fi
 
-# 检查memory_cache.py
-if [ ! -f "memory_cache.py" ]; then
-    echo "[ERROR] memory_cache.py未找到"
-    exit 1
-fi
-echo "[DONE] 内存缓存模块已找到"
-
 # 检查launcher.py
 if [ ! -f "launcher.py" ]; then
     echo "[ERROR] launcher.py未找到"

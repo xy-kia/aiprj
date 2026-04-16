@@ -261,6 +261,18 @@ export interface TestConnectionResponse {
   provider?: string
 }
 
+export interface ModelInfo {
+  id: string
+  object: string
+  created?: number
+  owned_by?: string
+}
+
+export interface ModelListResponse {
+  models: ModelInfo[]
+  provider: string
+}
+
 /**
  * 获取用户的AI配置
  */
@@ -280,6 +292,42 @@ export const updateAIConfig = (config: AIProviderConfig) => {
  */
 export const testAIConnection = (request: TestConnectionRequest) => {
   return apiClient.post<TestConnectionResponse>('/v1/ai-config/test-connection', request)
+}
+
+/**
+ * 获取用户配置下可用的模型列表
+ */
+export const getAvailableModels = () => {
+  return apiClient.get<ModelListResponse>('/v1/ai-config/models')
+}
+
+// 系统配置相关API
+export interface SystemConfig {
+  crawler_delay_min: number
+  crawler_delay_max: number
+  crawler_max_retries: number
+  crawler_timeout: number
+  crawler_use_proxy: boolean
+  crawler_proxy_list: string[]
+  evaluation_pass_score: number
+  evaluation_excellent_score: number
+  evaluation_need_improvement_score: number
+  evaluation_auto_evaluation_delay: number
+  evaluation_detailed_feedback: boolean
+  system_user_registration: boolean
+  system_intent_parsing: boolean
+  system_job_search: boolean
+  system_interview_practice: boolean
+  system_ai_evaluation: boolean
+  system_maintenance_mode: boolean
+}
+
+export const getSystemConfig = () => {
+  return apiClient.get<SystemConfig>('/v1/system-config')
+}
+
+export const updateSystemConfig = (config: SystemConfig) => {
+  return apiClient.post<SystemConfig>('/v1/system-config', config)
 }
 
 // ==================== 简历解析接口 ====================

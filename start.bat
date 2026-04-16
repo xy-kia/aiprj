@@ -143,17 +143,8 @@ if not exist "frontend\node_modules" (
     echo [DONE] Frontend dependencies found
 )
 
-REM Check memory cache module
-echo [CHECK] Checking memory cache module...
-if not exist "memory_cache.py" (
-    echo [ERROR] memory_cache.py not found in current directory
-    echo [SUGGESTION] Please ensure you have all project files
-    pause
-    exit /b 1
-)
-echo [DONE] Memory cache module found
-
 REM Check launcher.py
+echo [CHECK] Checking launcher script...
 echo [CHECK] Checking launcher script...
 if not exist "launcher.py" (
     echo [ERROR] launcher.py not found in current directory
@@ -244,34 +235,6 @@ if errorlevel 1 (
 )
 cd ..
 echo [DONE] Frontend built successfully
-
-REM Build admin frontend if exists
-echo [CHECK] Checking admin frontend...
-if exist "admin" (
-    echo [BUILD] Building admin frontend...
-    cd admin
-    if not exist "node_modules" (
-        echo [INFO] Installing admin dependencies...
-        call npm install
-        if errorlevel 1 (
-            echo [WARNING] Failed to install admin dependencies, skipping admin build
-            cd ..
-            goto :skip_admin_build
-        )
-    )
-    echo [INFO] Building admin production bundle...
-    call npm run build
-    if errorlevel 1 (
-        echo [WARNING] Admin frontend build failed, skipping admin
-        cd ..
-        goto :skip_admin_build
-    )
-    cd ..
-    echo [DONE] Admin frontend built successfully
-) else (
-    echo [INFO] Admin directory not found, skipping
-)
-:skip_admin_build
 
 echo.
 echo ========================================

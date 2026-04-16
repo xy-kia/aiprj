@@ -41,7 +41,7 @@ def patch_redis():
     import backend.app.cache.redis_client as redis_module
 
     # 导入我们的内存缓存实现
-    from memory_cache import MemoryCacheClient, get_memory_cache_client, check_memory_cache_connection
+    from backend.app.cache.memory_cache import MemoryCacheClient, get_memory_cache_client, check_memory_cache_connection
 
     # 替换RedisClient类
     redis_module.RedisClient = MemoryCacheClient
@@ -258,25 +258,6 @@ def create_app():
 
     # 挂载后端API
     app.mount("/api", backend_app)
-
-    # 尝试挂载管理端静态文件
-    admin_dist = Path(__file__).parent / "admin" / "dist"
-
-    if admin_dist.exists():
-        # 挂载静态文件到 /admin 路径
-        app.mount("/admin", StaticFiles(directory=str(admin_dist), html=True), name="admin")
-
-        # 添加回退路由，使 /admin 下的所有路径都返回 admin 的 index.html
-        @app.get("/admin/{full_path:path}")
-        async def serve_admin(request: Request, full_path: str):
-            index_file = admin_dist / "index.html"
-            if index_file.exists():
-                return FileResponse(str(index_file))
-            return JSONResponse({"error": "Admin file not found"}, status_code=404)
-
-        logger.info("管理端静态文件已挂载")
-    else:
-        logger.info("管理端构建目录不存在，跳过挂载")
 
     # 尝试挂载前端静态文件
     frontend_dist = Path(__file__).parent / "frontend" / "dist"

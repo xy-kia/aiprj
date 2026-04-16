@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <nav class="navbar">
+    <nav v-if="!isAdminRoute" class="navbar">
       <div class="nav-brand">
         <router-link to="/" class="brand-link">学生求职AI助手</router-link>
       </div>
@@ -17,7 +17,11 @@
 </template>
 
 <script setup lang="ts">
-// 主应用组件
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 </script>
 
 <style>

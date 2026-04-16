@@ -166,8 +166,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { AIProviderConfig, AIConfigResponse, TestConnectionRequest } from '../services/api'
-import { getAIConfig, updateAIConfig, testAIConnection } from '../services/api'
+import type { AIProviderConfig, AIConfigResponse, TestConnectionRequest } from '@/services/api'
+import { getAIConfig, updateAIConfig, testAIConnection } from '@/services/api'
 
 // AI提供商选项
 const providerOptions = [
