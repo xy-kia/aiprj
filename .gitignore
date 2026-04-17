@@ -78,3 +78,12 @@ coverage.xml
 
 # User data directory (for SQLite)
 .internship_assistant/
+
+# Runtime data directory
+data/
+
+# Uploads
+uploads/
+
+# Backend local env
+backend/.env

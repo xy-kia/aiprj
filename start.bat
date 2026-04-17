@@ -143,8 +143,30 @@ if not exist "frontend\node_modules" (
     echo [DONE] Frontend dependencies found
 )
 
+REM Ensure data directories exist
+echo [CHECK] Checking runtime data directories...
+if not exist "data" mkdir data
+if not exist "data\db" mkdir data\db
+if not exist "data\uploads" mkdir data\uploads
+if not exist "data\knowledge" mkdir data\knowledge
+if not exist "data\logs" mkdir data\logs
+echo [DONE] Runtime data directories ready
+
+REM Generate .env from template if not exists
+echo [CHECK] Checking environment configuration...
+if not exist ".env" (
+    if exist ".env.example" (
+        echo [INFO] Generating .env from .env.example...
+        copy ".env.example" ".env" > nul
+        echo [DONE] .env created from template
+    ) else (
+        echo [WARNING] .env.example not found, skipping .env generation
+    )
+) else (
+    echo [DONE] .env found
+)
+
 REM Check launcher.py
-echo [CHECK] Checking launcher script...
 echo [CHECK] Checking launcher script...
 if not exist "launcher.py" (
     echo [ERROR] launcher.py not found in current directory

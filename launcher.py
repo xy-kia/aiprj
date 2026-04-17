@@ -11,6 +11,7 @@ import webbrowser
 import time
 import json
 import socket
+import shutil
 from pathlib import Path
 import uvicorn
 import logging
@@ -81,37 +82,73 @@ def patch_match_calculator():
     except Exception as e:
         logger.warning(f"应用匹配计算器猴子补丁失败: {e}")
 
+# === 运行时目录管理 ===
+def ensure_data_directories():
+    """确保 data/ 运行时目录存在，若为空则复制默认数据"""
+    data_dir = project_dir / "data"
+    default_data_dir = project_dir / "default-data"
+
+    # 若 data/ 为空（没有任何内容），先复制 default-data/
+    if default_data_dir.exists():
+        has_content = any(data_dir.iterdir()) if data_dir.exists() else False
+        if not has_content:
+            logger.info("data/ 目录为空，正在复制默认数据...")
+            for item in default_data_dir.iterdir():
+                dest = data_dir / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest)
+            logger.info("默认数据复制完成")
+
+    # 创建子目录
+    subdirs = ["db", "uploads", "knowledge", "logs"]
+    for sub in subdirs:
+        (data_dir / sub).mkdir(parents=True, exist_ok=True)
+
+    return data_dir
+
 # === 环境设置 ===
 def setup_environment():
     """设置环境变量，配置SQLite和内存缓存"""
-    # 获取用户数据目录
-    data_dir = Path.home() / ".internship_assistant"
-    data_dir.mkdir(exist_ok=True)
+    # 确保运行时目录存在
+    data_dir = ensure_data_directories()
 
-    # 设置SQLite数据库路径
-    db_path = data_dir / "internship.db"
+    # 加载根目录 .env（如果存在）
+    env_file = project_dir / ".env"
+    if env_file.exists():
+        from dotenv import load_dotenv
+        load_dotenv(dotenv_path=str(env_file), override=True)
+        logger.info("已加载运行时 .env 配置")
 
-    # 环境变量配置
-    env_vars = {
-        "DATABASE_URL": f"sqlite:///{db_path}",
-        "REDIS_URL": "memory://",  # 使用内存缓存
+    # 设置SQLite数据库路径（优先使用环境变量，否则使用 data/db/）
+    db_path = os.environ.get("DATABASE_URL")
+    if not db_path:
+        db_file = data_dir / "db" / "internship.db"
+        db_path = f"sqlite:///{db_file}"
+        os.environ["DATABASE_URL"] = db_path
+
+    # 确保其他关键环境变量有默认值
+    defaults = {
+        "REDIS_URL": "memory://",
         "DEBUG": "False",
         "LOG_LEVEL": "INFO",
-        "CORS_ORIGINS": '["http://localhost:8000"]',
-        "OPENAI_API_KEY": "",  # 留空，用户可以在界面中配置
+        "CORS_ORIGINS": "http://localhost:8000",
+        "OPENAI_API_KEY": "",
         "OPENAI_BASE_URL": "https://api.openai.com/v1",
         "OPENAI_MODEL": "gpt-4o-mini",
         "APP_ENV": "production",
-        "APP_DEBUG": "False"
+        "APP_DEBUG": "False",
+        "STORAGE_LOCAL_PATH": str(data_dir / "uploads"),
     }
 
-    # 设置环境变量
-    for key, value in env_vars.items():
-        os.environ[key] = value
+    for key, value in defaults.items():
+        if key not in os.environ:
+            os.environ[key] = value
 
     logger.info(f"数据库路径: {db_path}")
     logger.info("环境变量设置完成")
-    return str(db_path)
+    return db_path.replace("sqlite:///", "") if db_path.startswith("sqlite:///") else str(data_dir / "db" / "internship.db")
 
 # === 数据库初始化 ===
 def init_database(db_path: str):

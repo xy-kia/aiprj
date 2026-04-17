@@ -93,6 +93,25 @@ else
     echo "[DONE] 前端依赖已找到"
 fi
 
+# 确保运行时目录存在
+echo "[CHECK] 检查运行时数据目录..."
+mkdir -p data/db data/uploads data/knowledge data/logs
+echo "[DONE] 运行时数据目录已就绪"
+
+# 若 .env 不存在，从模板生成
+echo "[CHECK] 检查环境变量配置..."
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        echo "[INFO] 正在从 .env.example 生成 .env..."
+        cp ".env.example" ".env"
+        echo "[DONE] .env 已创建"
+    else
+        echo "[WARNING] .env.example 未找到，跳过 .env 生成"
+    fi
+else
+    echo "[DONE] .env 已存在"
+fi
+
 # 检查launcher.py
 if [ ! -f "launcher.py" ]; then
     echo "[ERROR] launcher.py未找到"
